@@ -1,0 +1,115 @@
+/* ARMOR design tokens (CLAUDE.md bagian 10). One dark theme by design. */
+:root {
+  --bg: #06142a;
+  --surface: #0c2340;
+  --surface-2: #10294a;
+  --line: #1c3a5e;
+  --text: #eaf4ff;
+  --muted: #9db4cf;
+  --dim: #6f89a8;
+  --accent: #4fb8f5;
+  --accent-soft: #9be3fb;
+  --on-accent: #04111f;
+  --allow: #5fe3b1;
+  --review: #f3c35e;
+  --deny: #f79090;
+  --chamfer: 14px;
+  --radius: 10px;
+  --gutter: 20px;
+  --tabbar-h: 68px;
+  --max-w: 480px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+a {
+  color: var(--accent-soft);
+}
+
+a:hover {
+  color: var(--text);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 2px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-variation-settings: "opsz" 72;
+  font-weight: 900;
+  line-height: 1;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+h1 {
+  font-size: 40px;
+  text-transform: uppercase;
+}
+
+h2 {
+  font-size: 26px;
+  text-transform: uppercase;
+}
+
+h3 {
+  font-size: 19px;
+}
+
+p {
+  margin: 0;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+  }
+}

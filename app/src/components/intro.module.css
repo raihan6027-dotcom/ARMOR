@@ -1,0 +1,333 @@
+/* Ported from docs/design/intro-reference.dc.html */
+.stage {
+  position: relative;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.skip {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  z-index: 5;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+}
+
+.logoWrap {
+  position: relative;
+  width: 180px;
+  height: 176px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring,
+.ringLate {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  animation: ring 1.8s ease-out infinite;
+}
+
+.ringLate {
+  animation-delay: 0.9s;
+}
+
+.persp {
+  width: 150px;
+  height: 147px;
+  perspective: 800px;
+}
+
+.perspBig {
+  width: 210px;
+  height: 206px;
+  perspective: 900px;
+}
+
+.layers {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+.spinIn {
+  animation: spinIn 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.tilt {
+  animation: tilt 5s ease-in-out infinite alternate;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.mask {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: url(/armor-mark.png);
+  mask-image: url(/armor-mark.png);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background: linear-gradient(105deg, rgba(255, 255, 255, 0) 38%, rgba(255, 255, 255, 0.9) 50%, rgba(255, 255, 255, 0) 62%);
+  background-size: 260% 100%;
+  background-position: 160% 0;
+  transform: translateZ(1px);
+}
+
+.sheenOnce {
+  animation: sheenOnce 1s ease-in-out 0.8s both;
+}
+
+.sheen {
+  animation: sheen 3.4s ease-in-out infinite;
+}
+
+.ground {
+  width: 150px;
+  height: 14px;
+  margin-top: 18px;
+  border-radius: 50%;
+  background: #000;
+  filter: blur(8px);
+  animation: ground 5s ease-in-out infinite alternate;
+}
+
+.wordmark {
+  font-family: var(--font-display), sans-serif;
+  font-variation-settings: "opsz" 72;
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  padding-left: 0.22em;
+  line-height: 1;
+}
+
+.rise {
+  animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.flash {
+  position: absolute;
+  inset: 0;
+  background: var(--accent-soft);
+  animation: flash 1.2s linear both;
+}
+
+.slogan {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: var(--font-stencil), sans-serif;
+  font-variation-settings: "opsz" 72;
+  font-weight: 900;
+  font-size: clamp(56px, 20vw, 78px);
+  line-height: 0.9;
+  text-transform: uppercase;
+  animation: slogan 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.sloganSoft {
+  color: var(--accent-soft);
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  padding-top: 112px;
+  animation: sceneIn 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.scanBox {
+  position: relative;
+  width: 260px;
+  height: 312px;
+  margin: 0 auto;
+}
+
+.corner {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-color: var(--bracket, var(--accent));
+  border-style: solid;
+  border-width: 0;
+  transition: border-color 0.3s;
+}
+
+.tl { top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; }
+.tr { top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; }
+.bl { bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; }
+.br { bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; }
+
+.face {
+  position: absolute;
+  left: 30px;
+  top: 36px;
+  width: 200px;
+  height: 240px;
+  overflow: visible;
+}
+
+.draw {
+  stroke-dasharray: 420;
+  stroke-dashoffset: 420;
+  animation: draw 1.4s ease-out forwards;
+}
+
+.pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop 0.35s ease-out both;
+}
+
+.beam {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 8px;
+  height: 2px;
+  background: var(--accent-soft);
+  box-shadow: 0 0 14px 3px rgba(79, 184, 245, 0.55);
+  animation: sweep 1.4s ease-in-out infinite alternate;
+}
+
+.scanSteps {
+  width: 260px;
+  margin: 32px auto 0;
+}
+
+.verified {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 32px;
+  animation: stamp 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.verifiedText {
+  font-family: var(--font-display), sans-serif;
+  font-variation-settings: "opsz" 72;
+  font-size: clamp(24px, 8vw, 34px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--allow);
+  line-height: 1;
+  text-align: center;
+  padding: 0 var(--gutter);
+}
+
+/* Welcome */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 20px var(--gutter) calc(24px + env(safe-area-inset-bottom));
+}
+
+.welcomeTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+}
+
+.welcomeBrand {
+  font-family: var(--font-display), sans-serif;
+  font-variation-settings: "opsz" 72;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  line-height: 1;
+}
+
+.hero {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.headline {
+  font-size: 44px;
+  line-height: 0.95;
+}
+
+.headline span {
+  display: block;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  margin-top: 24px;
+}
+
+@keyframes sheen { 0% { background-position: 160% 0; } 55%, 100% { background-position: -60% 0; } }
+@keyframes sheenOnce { from { background-position: 160% 0; } to { background-position: -60% 0; } }
+@keyframes spinIn {
+  0% { opacity: 0; transform: rotateY(-110deg) scale(0.4); filter: blur(8px); }
+  70% { opacity: 1; transform: rotateY(14deg) scale(1.05); filter: blur(0); }
+  100% { opacity: 1; transform: rotateY(0) scale(1); filter: blur(0); }
+}
+@keyframes tilt {
+  0% { transform: rotateY(-26deg) rotateX(6deg) translateY(0); }
+  50% { transform: rotateY(0deg) rotateX(-4deg) translateY(-10px); }
+  100% { transform: rotateY(26deg) rotateX(6deg) translateY(0); }
+}
+@keyframes ground { 0%, 100% { transform: scaleX(1); opacity: 0.55; } 50% { transform: scaleX(0.78); opacity: 0.3; } }
+@keyframes ring { 0% { transform: scale(0.7); opacity: 0.5; } 100% { transform: scale(1.9); opacity: 0; } }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes slogan {
+  0% { opacity: 0; transform: scale(2.1); filter: blur(16px); }
+  26% { opacity: 1; transform: scale(1); filter: blur(0); }
+  82% { opacity: 1; transform: scale(1); filter: blur(0); }
+  100% { opacity: 0; transform: scale(0.9); filter: blur(4px); }
+}
+@keyframes flash { 0%, 24% { opacity: 0; } 28% { opacity: 0.18; } 46%, 100% { opacity: 0; } }
+@keyframes sceneIn { from { opacity: 0; transform: scale(1.12); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes sweep { from { transform: translateY(0); } to { transform: translateY(296px); } }
+@keyframes pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes stamp { 0% { opacity: 0; transform: scale(1.6); } 100% { opacity: 1; transform: scale(1); } }

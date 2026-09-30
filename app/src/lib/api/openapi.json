@@ -1,0 +1,4066 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "ARMOR Main Backend API",
+  "description": "\nARMOR (AI-Aware Identity Protection) memeriksa setiap permintaan ke AI generatif\n**sebelum** konten dibuat: wajah, suara, dan nama siapa yang dipakai, apa\ntujuannya, seberapa berisiko, dan apakah pemiliknya mengizinkan. Hasilnya ALLOW,\nREVIEW, atau DENY beserta alasan dan saran prompt.\n\nPrinsip: identitas hanya dari pendaftaran sukarela, ARMOR tidak pernah menebak\nnama dari wajah atau suara, foto dan rekaman tidak disimpan, dan keputusan akhir\nselalu dari policy engine deterministik.\n",
+  "version": "0.3.0"
+ },
+ "paths": {
+  "/auth/register": {
+   "post": {
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Register",
+    "operationId": "register_auth_register_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RegisterRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RegisterResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/auth/login": {
+   "post": {
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Login",
+    "operationId": "login_auth_login_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LoginRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TokenResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/auth/me": {
+   "get": {
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Me",
+    "operationId": "me_auth_me_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MeResponse"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   },
+   "patch": {
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Update Me",
+    "description": "Profil dan sakelar notifikasi email.",
+    "operationId": "update_me_auth_me_patch",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MeUpdate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MeResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/identity/enroll": {
+   "post": {
+    "tags": [
+     "Identity"
+    ],
+    "summary": "Enroll Identity",
+    "description": "Enroll your own face from three captures at different angles.\n\nRequires lapis 1 consent to the current face consent text. Photos are only\nprocessed in memory; only an encrypted mean embedding is stored.",
+    "operationId": "enroll_identity_identity_enroll_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IdentityEnrollRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IdentityEnrollResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/identity/verify": {
+   "post": {
+    "tags": [
+     "Identity"
+    ],
+    "summary": "Verify Identity",
+    "operationId": "verify_identity_identity_verify_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IdentityVerifyRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IdentityVerifyResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/identity/profile": {
+   "get": {
+    "tags": [
+     "Identity"
+    ],
+    "summary": "Get Identity Profile",
+    "operationId": "get_identity_profile_identity_profile_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "identity_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Identity Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IdentityProfileResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/identity/lock": {
+   "post": {
+    "tags": [
+     "Identity"
+    ],
+    "summary": "Lock Identity",
+    "operationId": "lock_identity_identity_lock_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IdentityLockRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IdentityLockResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/identity/me/revoke": {
+   "post": {
+    "tags": [
+     "Identity"
+    ],
+    "summary": "Revoke Media",
+    "description": "Withdraw consent for one media; its embedding is deleted immediately.",
+    "operationId": "revoke_media_identity_me_revoke_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "media",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "$ref": "#/components/schemas/BiometricMedia"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RevokeResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/identity/me": {
+   "delete": {
+    "tags": [
+     "Identity"
+    ],
+    "summary": "Delete My Identities",
+    "description": "Delete all identities you own, with their embeddings, permissions and consents.",
+    "operationId": "delete_my_identities_identity_me_delete",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DeleteIdentityResponse"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/permissions": {
+   "get": {
+    "tags": [
+     "Permission"
+    ],
+    "summary": "Get Permissions",
+    "operationId": "get_permissions_permissions_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "identity_id",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Identity Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PermissionsResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "Permission"
+    ],
+    "summary": "Set Permission",
+    "operationId": "set_permission_permissions_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PermissionSetRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PermissionSetResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/ai/analyze-intent": {
+   "post": {
+    "tags": [
+     "Intent"
+    ],
+    "summary": "Analyze Intent",
+    "operationId": "analyze_intent_ai_analyze_intent_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IntentRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IntentResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/analyze/intent": {
+   "post": {
+    "tags": [
+     "Intent"
+    ],
+    "summary": "Analyze Intent Alias",
+    "operationId": "analyze_intent_alias_analyze_intent_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IntentRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IntentResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/risk": {
+   "post": {
+    "tags": [
+     "Risk"
+    ],
+    "summary": "Analyze Risk",
+    "description": "Content risk only: consent and permissions are never inputs.",
+    "operationId": "analyze_risk_risk_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RiskRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RiskResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/analyze/risk": {
+   "post": {
+    "tags": [
+     "Risk"
+    ],
+    "summary": "Analyze Risk Alias",
+    "operationId": "analyze_risk_alias_analyze_risk_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RiskRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RiskResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/consent/request": {
+   "post": {
+    "tags": [
+     "Consent"
+    ],
+    "summary": "Request Consent",
+    "description": "Minta persetujuan untuk permintaan REVIEW milikmu. Jawabannya sama, entah ada\norang terdaftar di media itu atau tidak.",
+    "operationId": "request_consent_consent_request_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConsentRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConsentRequestResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/consent/request/{request_id}": {
+   "get": {
+    "tags": [
+     "Consent"
+    ],
+    "summary": "Consent Status For Request",
+    "operationId": "consent_status_for_request_consent_request__request_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "request_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Request Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConsentRequestStatusResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/consent/inbox": {
+   "get": {
+    "tags": [
+     "Consent"
+    ],
+    "summary": "Consent Inbox",
+    "description": "Kotak consent: permintaan atas identitas milikmu.",
+    "operationId": "consent_inbox_consent_inbox_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "pending",
+          "answered"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConsentInboxResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/consent/{consent_id}": {
+   "get": {
+    "tags": [
+     "Consent"
+    ],
+    "summary": "Get Consent",
+    "operationId": "get_consent_consent__consent_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "consent_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Consent Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConsentItem"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/consent/{consent_id}/respond": {
+   "post": {
+    "tags": [
+     "Consent"
+    ],
+    "summary": "Respond Consent",
+    "description": "Setujui dengan cakupan dan masa berlaku, tolak, atau blokir pengirim. Permintaan\nyang tertahan langsung dinilai ulang.",
+    "operationId": "respond_consent_consent__consent_id__respond_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "consent_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Consent Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConsentAnswer"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConsentItem"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/consent/{consent_id}/revoke": {
+   "post": {
+    "tags": [
+     "Consent"
+    ],
+    "summary": "Revoke Consent",
+    "description": "Cabut persetujuan yang sudah diberikan. Sejak saat itu dianggap tidak ada.",
+    "operationId": "revoke_consent_consent__consent_id__revoke_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "consent_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Consent Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConsentItem"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/decision": {
+   "post": {
+    "tags": [
+     "Decision"
+    ],
+    "summary": "Decide",
+    "description": "Stateless deterministic policy evaluation over pre-computed signals.",
+    "operationId": "decide_decision_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DecisionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DecisionResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests": {
+   "post": {
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Create Request",
+    "description": "Gateway ARMOR: periksa permintaan (gambar, video, audio, atau teks saja) sebelum\nkonten dibuat. Hasilnya ALLOW, REVIEW (ditahan menunggu persetujuan atau peninjauan),\natau DENY, dengan alasan dan saran prompt.",
+    "operationId": "create_request_requests_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RequestCreate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RequestDecisionResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "tags": [
+     "Requests"
+    ],
+    "summary": "List Requests",
+    "description": "Riwayat permintaan milik sendiri.",
+    "operationId": "list_requests_requests_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RequestHistoryResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{request_id}": {
+   "get": {
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Get Request",
+    "description": "Status terbaru satu permintaan milik sendiri (misalnya setelah persetujuan dijawab).",
+    "operationId": "get_request_requests__request_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "request_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Request Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RequestDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/logs": {
+   "get": {
+    "tags": [
+     "Logs"
+    ],
+    "summary": "Get Logs",
+    "description": "The caller's own decision log (most recent first).",
+    "operationId": "get_logs_logs_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 100,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RequestHistoryResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/me/data": {
+   "get": {
+    "tags": [
+     "Data saya"
+    ],
+    "summary": "Export My Data",
+    "operationId": "export_my_data_me_data_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Export My Data Me Data Get"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/circle": {
+   "get": {
+    "tags": [
+     "Pemilik"
+    ],
+    "summary": "List Circle",
+    "description": "Lingkaran tepercaya sebuah identitas milikmu.",
+    "operationId": "list_circle_circle_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "identity_id",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Identity Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "Pemilik"
+    ],
+    "summary": "Add To Circle",
+    "description": "Tambah orang ke lingkaran tepercaya lewat email, dengan cakupan dan masa berlaku.",
+    "operationId": "add_to_circle_circle_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CircleAdd"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/circle/{member_ref}": {
+   "delete": {
+    "tags": [
+     "Pemilik"
+    ],
+    "summary": "Remove From Circle",
+    "operationId": "remove_from_circle_circle__member_ref__delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "member_ref",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Member Ref"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/notifications": {
+   "get": {
+    "tags": [
+     "Pemilik"
+    ],
+    "summary": "List Notifications",
+    "operationId": "list_notifications_notifications_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "unread",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": false,
+       "title": "Unread"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/notifications/read": {
+   "post": {
+    "tags": [
+     "Pemilik"
+    ],
+    "summary": "Mark Notifications Read",
+    "operationId": "mark_notifications_read_notifications_read_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MarkRead"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/dashboard/activity": {
+   "get": {
+    "tags": [
+     "Pemilik"
+    ],
+    "summary": "Activity",
+    "description": "Upaya penggunaan identitasmu per minggu: diblokir, disetujui, menunggu. Pengirim\nhanya ditampilkan jika ia mengajukan permintaan persetujuan.",
+    "operationId": "activity_dashboard_activity_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "weeks",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 52,
+       "minimum": 1,
+       "default": 8,
+       "title": "Weeks"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/cases": {
+   "get": {
+    "tags": [
+     "Kasus"
+    ],
+    "summary": "List Cases",
+    "description": "Kasus milikmu; untuk peninjau, kasus yang ditugaskan; untuk admin, semua kasus.",
+    "operationId": "list_cases_cases_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   },
+   "post": {
+    "tags": [
+     "Kasus"
+    ],
+    "summary": "Create Appeal",
+    "description": "Ajukan banding atas keputusan DENY milikmu, dengan konteks tambahan.",
+    "operationId": "create_appeal_cases_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AppealCreate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/cases/dispute": {
+   "post": {
+    "tags": [
+     "Kasus"
+    ],
+    "summary": "Create Dispute",
+    "description": "Laporkan bahwa wajahmu didaftarkan orang lain, dengan verifikasi ulang lewat kamera.",
+    "operationId": "create_dispute_cases_dispute_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DisputeCreate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/cases/{case_id}": {
+   "get": {
+    "tags": [
+     "Kasus"
+    ],
+    "summary": "Get Case",
+    "operationId": "get_case_cases__case_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/cases/{case_id}/review": {
+   "post": {
+    "tags": [
+     "Kasus"
+    ],
+    "summary": "Start Review",
+    "operationId": "start_review_cases__case_id__review_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/cases/{case_id}/freeze": {
+   "post": {
+    "tags": [
+     "Kasus"
+    ],
+    "summary": "Freeze Identity",
+    "description": "Bekukan identitas yang disengketakan selama peninjauan.",
+    "operationId": "freeze_identity_cases__case_id__freeze_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/cases/{case_id}/resolve": {
+   "post": {
+    "tags": [
+     "Kasus"
+    ],
+    "summary": "Resolve Case",
+    "description": "Selesaikan kasus. Banding: pertahankan, atau koreksi label intent/risiko lalu\npolicy engine memutuskan ulang. Sengketa: pindahkan kepemilikan, hapus pendaftaran\npalsu, atau tolak.",
+    "operationId": "resolve_case_cases__case_id__resolve_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CaseResolve"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/cases/{case_id}/assign": {
+   "post": {
+    "tags": [
+     "Kasus"
+    ],
+    "summary": "Assign Case",
+    "operationId": "assign_case_cases__case_id__assign_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CaseAssign"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/audit/verify": {
+   "get": {
+    "tags": [
+     "Kasus"
+    ],
+    "summary": "Verify Audit Chain",
+    "description": "Periksa integritas rantai hash audit log.",
+    "operationId": "verify_audit_chain_audit_verify_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/": {
+   "get": {
+    "tags": [
+     "Meta"
+    ],
+    "summary": "Root",
+    "operationId": "root__get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/health": {
+   "get": {
+    "tags": [
+     "Meta"
+    ],
+    "summary": "Health",
+    "operationId": "health_health_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "AppealCreate": {
+    "properties": {
+     "kind": {
+      "type": "string",
+      "const": "APPEAL",
+      "title": "Kind",
+      "default": "APPEAL"
+     },
+     "request_id": {
+      "type": "string",
+      "title": "Request Id"
+     },
+     "note": {
+      "type": "string",
+      "maxLength": 2000,
+      "minLength": 3,
+      "title": "Note",
+      "description": "Konteks tambahan dari requester"
+     }
+    },
+    "type": "object",
+    "required": [
+     "request_id",
+     "note"
+    ],
+    "title": "AppealCreate"
+   },
+   "BiometricMedia": {
+    "type": "string",
+    "enum": [
+     "FACE",
+     "VOICE"
+    ],
+    "title": "BiometricMedia",
+    "description": "The two biometric media an owner controls separately (Lock, permission)."
+   },
+   "CaseAssign": {
+    "properties": {
+     "reviewer_email": {
+      "type": "string",
+      "title": "Reviewer Email"
+     }
+    },
+    "type": "object",
+    "required": [
+     "reviewer_email"
+    ],
+    "title": "CaseAssign"
+   },
+   "CaseResolve": {
+    "properties": {
+     "outcome": {
+      "type": "string",
+      "enum": [
+       "UPHOLD",
+       "RELABEL",
+       "TRANSFER",
+       "DELETE_ENROLLMENT",
+       "REJECT"
+      ],
+      "title": "Outcome"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 2000
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     },
+     "corrected_intent": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Intent"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "corrected_risk": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/RiskLevel"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "required": [
+     "outcome"
+    ],
+    "title": "CaseResolve"
+   },
+   "CircleAdd": {
+    "properties": {
+     "identity_id": {
+      "type": "string",
+      "title": "Identity Id"
+     },
+     "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+     },
+     "intents": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/Intent"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Intents"
+     },
+     "media": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/BiometricMedia"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "expires_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expires At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "identity_id",
+     "email"
+    ],
+    "title": "CircleAdd",
+    "examples": [
+     {
+      "email": "sinta@example.com",
+      "expires_at": "2026-12-31T23:59:59",
+      "identity_id": "<identity_id milikmu>",
+      "intents": [
+       "PERSONAL_CREATION"
+      ],
+      "media": "FACE"
+     }
+    ]
+   },
+   "ConsentAgreement": {
+    "properties": {
+     "agreed": {
+      "type": "boolean",
+      "title": "Agreed"
+     },
+     "text_version": {
+      "type": "string",
+      "title": "Text Version"
+     }
+    },
+    "type": "object",
+    "required": [
+     "agreed",
+     "text_version"
+    ],
+    "title": "ConsentAgreement",
+    "description": "Lapis 1: explicit agreement to a specific version of docs/consent-text/."
+   },
+   "ConsentAnswer": {
+    "properties": {
+     "action": {
+      "type": "string",
+      "enum": [
+       "APPROVE",
+       "DENY",
+       "BLOCK"
+      ],
+      "title": "Action"
+     },
+     "intent": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Intent"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "media": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/BiometricMedia"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "validity": {
+      "type": "string",
+      "enum": [
+       "ONCE",
+       "DAYS_1",
+       "DAYS_7",
+       "DAYS_30",
+       "UNTIL"
+      ],
+      "title": "Validity",
+      "default": "ONCE"
+     },
+     "until": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Until"
+     }
+    },
+    "type": "object",
+    "required": [
+     "action"
+    ],
+    "title": "ConsentAnswer",
+    "description": "APPROVE with a scope and validity, DENY, or BLOCK (deny and block the sender).",
+    "examples": [
+     {
+      "action": "APPROVE",
+      "intent": "COMMERCIAL_USE",
+      "media": "FACE",
+      "validity": "DAYS_7"
+     },
+     {
+      "action": "BLOCK"
+     }
+    ]
+   },
+   "ConsentInboxResponse": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ConsentItem"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "pending": {
+      "type": "integer",
+      "title": "Pending"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "pending"
+    ],
+    "title": "ConsentInboxResponse"
+   },
+   "ConsentItem": {
+    "properties": {
+     "consent_id": {
+      "type": "string",
+      "title": "Consent Id"
+     },
+     "identity_id": {
+      "type": "string",
+      "title": "Identity Id"
+     },
+     "requester_email": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Requester Email"
+     },
+     "intent": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Intent"
+     },
+     "media": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Media"
+     },
+     "prompt": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Prompt"
+     },
+     "media_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Media Type"
+     },
+     "status": {
+      "$ref": "#/components/schemas/ConsentStatus"
+     },
+     "state": {
+      "type": "string",
+      "title": "State"
+     },
+     "validity": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Validity"
+     },
+     "expires_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expires At"
+     },
+     "answered_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Answered At"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "consent_id",
+     "identity_id",
+     "status",
+     "state"
+    ],
+    "title": "ConsentItem"
+   },
+   "ConsentRequest": {
+    "properties": {
+     "request_id": {
+      "type": "string",
+      "title": "Request Id"
+     },
+     "intent": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Intent"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "media": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/BiometricMedia"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "required": [
+     "request_id"
+    ],
+    "title": "ConsentRequest",
+    "description": "Ask for consent on one of your own requests that is waiting for review."
+   },
+   "ConsentRequestResponse": {
+    "properties": {
+     "request_id": {
+      "type": "string",
+      "title": "Request Id"
+     },
+     "status": {
+      "$ref": "#/components/schemas/ConsentStatus"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message",
+      "default": "Permintaan persetujuan dikirim jika diperlukan."
+     }
+    },
+    "type": "object",
+    "required": [
+     "request_id",
+     "status"
+    ],
+    "title": "ConsentRequestResponse"
+   },
+   "ConsentRequestStatusResponse": {
+    "properties": {
+     "request_id": {
+      "type": "string",
+      "title": "Request Id"
+     },
+     "status": {
+      "$ref": "#/components/schemas/ConsentStatus"
+     }
+    },
+    "type": "object",
+    "required": [
+     "request_id",
+     "status"
+    ],
+    "title": "ConsentRequestStatusResponse"
+   },
+   "ConsentStatus": {
+    "type": "string",
+    "enum": [
+     "GRANTED",
+     "DENIED",
+     "PENDING",
+     "NONE"
+    ],
+    "title": "ConsentStatus"
+   },
+   "Decision": {
+    "type": "string",
+    "enum": [
+     "ALLOW",
+     "REVIEW",
+     "DENY"
+    ],
+    "title": "Decision"
+   },
+   "DecisionBlock": {
+    "properties": {
+     "action": {
+      "$ref": "#/components/schemas/Decision"
+     },
+     "reason_code": {
+      "type": "string",
+      "title": "Reason Code"
+     },
+     "reason": {
+      "type": "string",
+      "title": "Reason"
+     },
+     "suggestion": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Suggestion"
+     },
+     "label_required": {
+      "type": "boolean",
+      "title": "Label Required",
+      "default": false
+     }
+    },
+    "type": "object",
+    "required": [
+     "action",
+     "reason_code",
+     "reason"
+    ],
+    "title": "DecisionBlock"
+   },
+   "DecisionRequest": {
+    "properties": {
+     "targets": {
+      "items": {
+       "$ref": "#/components/schemas/DecisionTarget"
+      },
+      "type": "array",
+      "title": "Targets"
+     },
+     "intent": {
+      "$ref": "#/components/schemas/Intent"
+     },
+     "risk_level": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/RiskLevel"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "media_type": {
+      "$ref": "#/components/schemas/MediaType",
+      "default": "IMAGE"
+     },
+     "intent_confidence": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Intent Confidence"
+     },
+     "realism": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 1.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Realism"
+     },
+     "unavailable": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Unavailable"
+     },
+     "prompt": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Prompt"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "intent"
+    ],
+    "title": "DecisionRequest",
+    "description": "Stateless policy evaluation over pre-computed signals (for testing and demos)."
+   },
+   "DecisionResponse": {
+    "properties": {
+     "decision": {
+      "$ref": "#/components/schemas/Decision"
+     },
+     "reason_code": {
+      "type": "string",
+      "title": "Reason Code"
+     },
+     "reason": {
+      "type": "string",
+      "title": "Reason"
+     },
+     "suggestion": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Suggestion"
+     },
+     "requester_code": {
+      "type": "string",
+      "title": "Requester Code"
+     },
+     "requester_message": {
+      "type": "string",
+      "title": "Requester Message"
+     },
+     "effective_intent": {
+      "$ref": "#/components/schemas/Intent"
+     },
+     "label_required": {
+      "type": "boolean",
+      "title": "Label Required"
+     },
+     "per_target_detail": {
+      "items": {
+       "$ref": "#/components/schemas/TargetDetail"
+      },
+      "type": "array",
+      "title": "Per Target Detail"
+     }
+    },
+    "type": "object",
+    "required": [
+     "decision",
+     "reason_code",
+     "reason",
+     "requester_code",
+     "requester_message",
+     "effective_intent",
+     "label_required",
+     "per_target_detail"
+    ],
+    "title": "DecisionResponse"
+   },
+   "DecisionTarget": {
+    "properties": {
+     "source": {
+      "$ref": "#/components/schemas/TargetSource",
+      "default": "FACE"
+     },
+     "target_type": {
+      "$ref": "#/components/schemas/IdentityTarget"
+     },
+     "identity_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Identity Id"
+     },
+     "score": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Score"
+     },
+     "lock_level": {
+      "$ref": "#/components/schemas/LockLevel",
+      "default": "NONE"
+     },
+     "consent": {
+      "$ref": "#/components/schemas/ConsentStatus",
+      "default": "NONE"
+     },
+     "permission": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/PermissionDecision"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "in_trusted_circle": {
+      "type": "boolean",
+      "title": "In Trusted Circle",
+      "default": false
+     },
+     "guardian_child": {
+      "type": "boolean",
+      "title": "Guardian Child",
+      "default": false
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "target_type"
+    ],
+    "title": "DecisionTarget"
+   },
+   "DeleteIdentityResponse": {
+    "properties": {
+     "deleted_identities": {
+      "type": "integer",
+      "title": "Deleted Identities"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message"
+     }
+    },
+    "type": "object",
+    "required": [
+     "deleted_identities",
+     "message"
+    ],
+    "title": "DeleteIdentityResponse"
+   },
+   "DisputeCreate": {
+    "properties": {
+     "images": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "maxItems": 3,
+      "minItems": 3,
+      "title": "Images"
+     },
+     "consent": {
+      "$ref": "#/components/schemas/ConsentAgreement"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 2000
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     }
+    },
+    "type": "object",
+    "required": [
+     "images",
+     "consent"
+    ],
+    "title": "DisputeCreate",
+    "description": "Re-verify your own face live (three captures, like enrollment)."
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "IdentityBlock": {
+    "properties": {
+     "target": {
+      "type": "string",
+      "title": "Target"
+     },
+     "people": {
+      "items": {
+       "$ref": "#/components/schemas/PersonBlock"
+      },
+      "type": "array",
+      "title": "People",
+      "default": []
+     }
+    },
+    "type": "object",
+    "required": [
+     "target"
+    ],
+    "title": "IdentityBlock",
+    "description": "Requester-safe: SELF / OTHER / NONE summary plus one entry per person found.\nNever a target identity id, whether it is registered, or a match score."
+   },
+   "IdentityEnrollRequest": {
+    "properties": {
+     "images": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "maxItems": 3,
+      "minItems": 3,
+      "title": "Images"
+     },
+     "consent": {
+      "$ref": "#/components/schemas/ConsentAgreement"
+     },
+     "display_name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 80
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Display Name"
+     }
+    },
+    "type": "object",
+    "required": [
+     "images",
+     "consent"
+    ],
+    "title": "IdentityEnrollRequest"
+   },
+   "IdentityEnrollResponse": {
+    "properties": {
+     "identity_id": {
+      "type": "string",
+      "title": "Identity Id"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "face_enrolled": {
+      "type": "boolean",
+      "title": "Face Enrolled"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message"
+     }
+    },
+    "type": "object",
+    "required": [
+     "identity_id",
+     "status",
+     "face_enrolled",
+     "message"
+    ],
+    "title": "IdentityEnrollResponse"
+   },
+   "IdentityLockRequest": {
+    "properties": {
+     "identity_id": {
+      "type": "string",
+      "title": "Identity Id"
+     },
+     "level": {
+      "$ref": "#/components/schemas/LockLevel",
+      "default": "ALL"
+     },
+     "media": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/BiometricMedia"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "required": [
+     "identity_id"
+    ],
+    "title": "IdentityLockRequest"
+   },
+   "IdentityLockResponse": {
+    "properties": {
+     "identity_id": {
+      "type": "string",
+      "title": "Identity Id"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "face_lock": {
+      "$ref": "#/components/schemas/LockLevel"
+     },
+     "voice_lock": {
+      "$ref": "#/components/schemas/LockLevel"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message"
+     }
+    },
+    "type": "object",
+    "required": [
+     "identity_id",
+     "status",
+     "face_lock",
+     "voice_lock",
+     "message"
+    ],
+    "title": "IdentityLockResponse"
+   },
+   "IdentityProfileResponse": {
+    "properties": {
+     "identity_id": {
+      "type": "string",
+      "title": "Identity Id"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "display_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Display Name"
+     },
+     "is_child": {
+      "type": "boolean",
+      "title": "Is Child",
+      "default": false
+     },
+     "face_enrolled": {
+      "type": "boolean",
+      "title": "Face Enrolled"
+     },
+     "voice_enrolled": {
+      "type": "boolean",
+      "title": "Voice Enrolled"
+     },
+     "face_lock": {
+      "$ref": "#/components/schemas/LockLevel",
+      "default": "NONE"
+     },
+     "voice_lock": {
+      "$ref": "#/components/schemas/LockLevel",
+      "default": "NONE"
+     }
+    },
+    "type": "object",
+    "required": [
+     "identity_id",
+     "status",
+     "face_enrolled",
+     "voice_enrolled"
+    ],
+    "title": "IdentityProfileResponse"
+   },
+   "IdentityTarget": {
+    "type": "string",
+    "enum": [
+     "SELF",
+     "OTHER_REGISTERED",
+     "OTHER_UNREGISTERED",
+     "UNCLEAR"
+    ],
+    "title": "IdentityTarget"
+   },
+   "IdentityVerifyRequest": {
+    "properties": {
+     "image": {
+      "type": "string",
+      "title": "Image"
+     },
+     "identity_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Identity Id"
+     }
+    },
+    "type": "object",
+    "required": [
+     "image"
+    ],
+    "title": "IdentityVerifyRequest"
+   },
+   "IdentityVerifyResponse": {
+    "properties": {
+     "identity_id": {
+      "type": "string",
+      "title": "Identity Id"
+     },
+     "match": {
+      "type": "boolean",
+      "title": "Match"
+     },
+     "score": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Score"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "ai_available": {
+      "type": "boolean",
+      "title": "Ai Available",
+      "default": true
+     }
+    },
+    "type": "object",
+    "required": [
+     "identity_id",
+     "match",
+     "status"
+    ],
+    "title": "IdentityVerifyResponse"
+   },
+   "Intent": {
+    "type": "string",
+    "enum": [
+     "PERSONAL_CREATION",
+     "PERSONAL_EDITING",
+     "SATIRE_PARODY",
+     "COMMERCIAL_USE",
+     "POLITICAL_USE",
+     "IMPERSONATION",
+     "DEFAMATION",
+     "SEXUAL_EXPLICIT",
+     "DECEPTIVE",
+     "UNCERTAIN"
+    ],
+    "title": "Intent"
+   },
+   "IntentBlock": {
+    "properties": {
+     "label": {
+      "$ref": "#/components/schemas/Intent"
+     },
+     "confidence": {
+      "type": "number",
+      "title": "Confidence"
+     },
+     "ai_available": {
+      "type": "boolean",
+      "title": "Ai Available"
+     }
+    },
+    "type": "object",
+    "required": [
+     "label",
+     "confidence",
+     "ai_available"
+    ],
+    "title": "IntentBlock"
+   },
+   "IntentRequest": {
+    "properties": {
+     "prompt": {
+      "type": "string",
+      "title": "Prompt"
+     }
+    },
+    "type": "object",
+    "required": [
+     "prompt"
+    ],
+    "title": "IntentRequest"
+   },
+   "IntentResponse": {
+    "properties": {
+     "intent": {
+      "type": "string",
+      "title": "Intent"
+     },
+     "confidence": {
+      "type": "number",
+      "title": "Confidence"
+     },
+     "ai_available": {
+      "type": "boolean",
+      "title": "Ai Available",
+      "default": true
+     },
+     "model_version": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Model Version"
+     }
+    },
+    "type": "object",
+    "required": [
+     "intent",
+     "confidence"
+    ],
+    "title": "IntentResponse"
+   },
+   "LockLevel": {
+    "type": "string",
+    "enum": [
+     "NONE",
+     "COMMERCIAL_POLITICAL",
+     "ALL"
+    ],
+    "title": "LockLevel"
+   },
+   "LoginRequest": {
+    "properties": {
+     "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+     },
+     "password": {
+      "type": "string",
+      "title": "Password"
+     }
+    },
+    "type": "object",
+    "required": [
+     "email",
+     "password"
+    ],
+    "title": "LoginRequest"
+   },
+   "MarkRead": {
+    "properties": {
+     "ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ids",
+      "description": "None = tandai semua dibaca"
+     }
+    },
+    "type": "object",
+    "title": "MarkRead"
+   },
+   "MeResponse": {
+    "properties": {
+     "user_id": {
+      "type": "string",
+      "title": "User Id"
+     },
+     "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+     },
+     "role": {
+      "type": "string",
+      "title": "Role",
+      "default": "USER"
+     },
+     "display_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Display Name"
+     },
+     "email_notifications": {
+      "type": "boolean",
+      "title": "Email Notifications",
+      "default": false
+     }
+    },
+    "type": "object",
+    "required": [
+     "user_id",
+     "email"
+    ],
+    "title": "MeResponse"
+   },
+   "MeUpdate": {
+    "properties": {
+     "display_name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 80
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Display Name"
+     },
+     "email_notifications": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Email Notifications"
+     }
+    },
+    "type": "object",
+    "title": "MeUpdate"
+   },
+   "MediaType": {
+    "type": "string",
+    "enum": [
+     "IMAGE",
+     "VIDEO",
+     "AUDIO",
+     "TEXT_ONLY"
+    ],
+    "title": "MediaType"
+   },
+   "PermissionDecision": {
+    "type": "string",
+    "enum": [
+     "ALLOW",
+     "REVIEW",
+     "DENY"
+    ],
+    "title": "PermissionDecision"
+   },
+   "PermissionSetRequest": {
+    "properties": {
+     "identity_id": {
+      "type": "string",
+      "title": "Identity Id"
+     },
+     "intent": {
+      "$ref": "#/components/schemas/Intent"
+     },
+     "media": {
+      "$ref": "#/components/schemas/BiometricMedia",
+      "default": "FACE"
+     },
+     "decision": {
+      "$ref": "#/components/schemas/PermissionDecision"
+     }
+    },
+    "type": "object",
+    "required": [
+     "identity_id",
+     "intent",
+     "decision"
+    ],
+    "title": "PermissionSetRequest"
+   },
+   "PermissionSetResponse": {
+    "properties": {
+     "identity_id": {
+      "type": "string",
+      "title": "Identity Id"
+     },
+     "intent": {
+      "$ref": "#/components/schemas/Intent"
+     },
+     "media": {
+      "$ref": "#/components/schemas/BiometricMedia"
+     },
+     "decision": {
+      "$ref": "#/components/schemas/PermissionDecision"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message",
+      "default": "Permission updated successfully"
+     }
+    },
+    "type": "object",
+    "required": [
+     "identity_id",
+     "intent",
+     "media",
+     "decision"
+    ],
+    "title": "PermissionSetResponse"
+   },
+   "PermissionsResponse": {
+    "properties": {
+     "identity_id": {
+      "type": "string",
+      "title": "Identity Id"
+     },
+     "permissions": {
+      "additionalProperties": {
+       "additionalProperties": {
+        "$ref": "#/components/schemas/PermissionDecision"
+       },
+       "propertyNames": {
+        "$ref": "#/components/schemas/Intent"
+       },
+       "type": "object"
+      },
+      "propertyNames": {
+       "$ref": "#/components/schemas/BiometricMedia"
+      },
+      "type": "object",
+      "title": "Permissions"
+     },
+     "locked_intents": {
+      "items": {
+       "$ref": "#/components/schemas/Intent"
+      },
+      "type": "array",
+      "title": "Locked Intents"
+     }
+    },
+    "type": "object",
+    "required": [
+     "identity_id",
+     "permissions",
+     "locked_intents"
+    ],
+    "title": "PermissionsResponse"
+   },
+   "PersonBlock": {
+    "properties": {
+     "source": {
+      "type": "string",
+      "title": "Source"
+     },
+     "target": {
+      "type": "string",
+      "title": "Target"
+     },
+     "quality_ok": {
+      "type": "boolean",
+      "title": "Quality Ok"
+     }
+    },
+    "type": "object",
+    "required": [
+     "source",
+     "target",
+     "quality_ok"
+    ],
+    "title": "PersonBlock"
+   },
+   "RegisterRequest": {
+    "properties": {
+     "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+     },
+     "password": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 6,
+      "title": "Password"
+     }
+    },
+    "type": "object",
+    "required": [
+     "email",
+     "password"
+    ],
+    "title": "RegisterRequest"
+   },
+   "RegisterResponse": {
+    "properties": {
+     "user_id": {
+      "type": "string",
+      "title": "User Id"
+     },
+     "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message",
+      "default": "User registered successfully"
+     }
+    },
+    "type": "object",
+    "required": [
+     "user_id",
+     "email"
+    ],
+    "title": "RegisterResponse"
+   },
+   "RequestCreate": {
+    "properties": {
+     "prompt": {
+      "type": "string",
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Prompt"
+     },
+     "image": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Image"
+     },
+     "video": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Video"
+     },
+     "audio": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Audio"
+     },
+     "media_type": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/MediaType"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "allow_training": {
+      "type": "boolean",
+      "title": "Allow Training",
+      "default": false
+     }
+    },
+    "type": "object",
+    "required": [
+     "prompt"
+    ],
+    "title": "RequestCreate",
+    "description": "Who is in the media is found by ARMOR, never named by the client.\nSend at most one of image, video, audio (base64); none = text only.",
+    "examples": [
+     {
+      "image": "<base64 PNG/JPEG>",
+      "prompt": "Buat karikatur superhero dari foto ini."
+     }
+    ]
+   },
+   "RequestDecisionResponse": {
+    "properties": {
+     "request_id": {
+      "type": "string",
+      "title": "Request Id"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "media_type": {
+      "$ref": "#/components/schemas/MediaType"
+     },
+     "identity": {
+      "$ref": "#/components/schemas/IdentityBlock"
+     },
+     "intent": {
+      "$ref": "#/components/schemas/IntentBlock"
+     },
+     "risk": {
+      "$ref": "#/components/schemas/RiskBlock"
+     },
+     "decision": {
+      "$ref": "#/components/schemas/DecisionBlock"
+     },
+     "checks_unavailable": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Checks Unavailable",
+      "default": []
+     },
+     "timing_ms": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "Timing Ms",
+      "default": {}
+     }
+    },
+    "type": "object",
+    "required": [
+     "request_id",
+     "status",
+     "media_type",
+     "identity",
+     "intent",
+     "risk",
+     "decision"
+    ],
+    "title": "RequestDecisionResponse",
+    "examples": [
+     {
+      "checks_unavailable": [],
+      "decision": {
+       "action": "DENY",
+       "label_required": false,
+       "reason": "Konten yang membuat orang lain terlihat seperti tahanan dapat mencemarkan nama baiknya.",
+       "reason_code": "HARMFUL_DEFAMATION",
+       "suggestion": "Buat karikatur superhero dari foto ini."
+      },
+      "identity": {
+       "people": [
+        {
+         "quality_ok": true,
+         "source": "FACE",
+         "target": "OTHER"
+        }
+       ],
+       "target": "OTHER"
+      },
+      "intent": {
+       "ai_available": true,
+       "confidence": 0.94,
+       "label": "DEFAMATION"
+      },
+      "media_type": "IMAGE",
+      "request_id": "7d1c2f7e-5d8b-4e3f-9a51-2b9c0f1e6a10",
+      "risk": {
+       "ai_available": false,
+       "level": "CRITICAL",
+       "score": 95
+      },
+      "status": "FINAL",
+      "timing_ms": {
+       "face": 41,
+       "intent": 3,
+       "policy": 2,
+       "risk": 1,
+       "router": 0
+      }
+     }
+    ]
+   },
+   "RequestDetail": {
+    "properties": {
+     "request_id": {
+      "type": "string",
+      "title": "Request Id"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "prompt": {
+      "type": "string",
+      "title": "Prompt"
+     },
+     "media_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Media Type"
+     },
+     "decision": {
+      "$ref": "#/components/schemas/DecisionBlock"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "updated_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "request_id",
+     "status",
+     "prompt",
+     "decision",
+     "created_at"
+    ],
+    "title": "RequestDetail"
+   },
+   "RequestHistoryItem": {
+    "properties": {
+     "request_id": {
+      "type": "string",
+      "title": "Request Id"
+     },
+     "status": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Status"
+     },
+     "intent": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Intent"
+     },
+     "risk_level": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Risk Level"
+     },
+     "decision": {
+      "type": "string",
+      "title": "Decision"
+     },
+     "reason_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason Code"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "request_id",
+     "intent",
+     "risk_level",
+     "decision",
+     "reason_code",
+     "created_at"
+    ],
+    "title": "RequestHistoryItem"
+   },
+   "RequestHistoryResponse": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/RequestHistoryItem"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total"
+    ],
+    "title": "RequestHistoryResponse"
+   },
+   "RevokeResponse": {
+    "properties": {
+     "identity_id": {
+      "type": "string",
+      "title": "Identity Id"
+     },
+     "media": {
+      "$ref": "#/components/schemas/BiometricMedia"
+     },
+     "revoked_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Revoked At"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message"
+     }
+    },
+    "type": "object",
+    "required": [
+     "identity_id",
+     "media",
+     "revoked_at",
+     "message"
+    ],
+    "title": "RevokeResponse"
+   },
+   "RiskBlock": {
+    "properties": {
+     "score": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Score"
+     },
+     "level": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/RiskLevel"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "ai_available": {
+      "type": "boolean",
+      "title": "Ai Available"
+     },
+     "top_features": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Top Features",
+      "default": []
+     }
+    },
+    "type": "object",
+    "required": [
+     "ai_available"
+    ],
+    "title": "RiskBlock"
+   },
+   "RiskFactor": {
+    "properties": {
+     "feature": {
+      "type": "string",
+      "title": "Feature"
+     },
+     "value": {
+      "title": "Value"
+     },
+     "effect": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Effect"
+     }
+    },
+    "type": "object",
+    "required": [
+     "feature"
+    ],
+    "title": "RiskFactor"
+   },
+   "RiskLevel": {
+    "type": "string",
+    "enum": [
+     "LOW",
+     "MEDIUM",
+     "HIGH",
+     "CRITICAL"
+    ],
+    "title": "RiskLevel"
+   },
+   "RiskRequest": {
+    "properties": {
+     "identity_target": {
+      "type": "string",
+      "title": "Identity Target",
+      "default": "NONE"
+     },
+     "intent": {
+      "$ref": "#/components/schemas/Intent"
+     },
+     "prompt": {
+      "type": "string",
+      "title": "Prompt",
+      "default": ""
+     },
+     "media_type": {
+      "$ref": "#/components/schemas/MediaType",
+      "default": "IMAGE"
+     },
+     "confidence": {
+      "type": "number",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Confidence",
+      "default": 1.0
+     }
+    },
+    "type": "object",
+    "required": [
+     "intent"
+    ],
+    "title": "RiskRequest"
+   },
+   "RiskResponse": {
+    "properties": {
+     "risk_level": {
+      "type": "string",
+      "title": "Risk Level"
+     },
+     "risk_score": {
+      "type": "integer",
+      "title": "Risk Score"
+     },
+     "ai_available": {
+      "type": "boolean",
+      "title": "Ai Available",
+      "default": true
+     },
+     "model_version": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Model Version"
+     },
+     "top_features": {
+      "items": {
+       "$ref": "#/components/schemas/RiskFactor"
+      },
+      "type": "array",
+      "title": "Top Features",
+      "default": []
+     },
+     "features": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Features",
+      "default": {}
+     }
+    },
+    "type": "object",
+    "required": [
+     "risk_level",
+     "risk_score"
+    ],
+    "title": "RiskResponse"
+   },
+   "TargetDetail": {
+    "properties": {
+     "source": {
+      "$ref": "#/components/schemas/TargetSource"
+     },
+     "target_type": {
+      "$ref": "#/components/schemas/IdentityTarget"
+     },
+     "identity_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Identity Id"
+     },
+     "score": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Score"
+     },
+     "decision": {
+      "$ref": "#/components/schemas/Decision"
+     },
+     "reason_code": {
+      "type": "string",
+      "title": "Reason Code"
+     },
+     "reason": {
+      "type": "string",
+      "title": "Reason"
+     }
+    },
+    "type": "object",
+    "required": [
+     "source",
+     "target_type",
+     "decision",
+     "reason_code",
+     "reason"
+    ],
+    "title": "TargetDetail"
+   },
+   "TargetSource": {
+    "type": "string",
+    "enum": [
+     "FACE",
+     "VOICE",
+     "TEXT"
+    ],
+    "title": "TargetSource"
+   },
+   "TokenResponse": {
+    "properties": {
+     "access_token": {
+      "type": "string",
+      "title": "Access Token"
+     },
+     "token_type": {
+      "type": "string",
+      "title": "Token Type",
+      "default": "bearer"
+     },
+     "user_id": {
+      "type": "string",
+      "title": "User Id"
+     }
+    },
+    "type": "object",
+    "required": [
+     "access_token",
+     "user_id"
+    ],
+    "title": "TokenResponse"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   }
+  },
+  "securitySchemes": {
+   "HTTPBearer": {
+    "type": "http",
+    "scheme": "bearer"
+   }
+  }
+ },
+ "tags": [
+  {
+   "name": "Auth",
+   "description": "Daftar, masuk, profil akun."
+  },
+  {
+   "name": "Identity",
+   "description": "Pendaftaran wajah, Lock, cabut persetujuan, hapus identitas."
+  },
+  {
+   "name": "Requests",
+   "description": "Gateway: periksa permintaan sebelum konten dibuat."
+  },
+  {
+   "name": "Consent",
+   "description": "Kotak persetujuan pemilik identitas."
+  },
+  {
+   "name": "Pemilik",
+   "description": "Lingkaran tepercaya, notifikasi, dasbor aktivitas."
+  },
+  {
+   "name": "Permission",
+   "description": "Izin per tujuan x media."
+  },
+  {
+   "name": "Kasus",
+   "description": "Banding, sengketa, dan konsol peninjau."
+  },
+  {
+   "name": "Data saya",
+   "description": "Unduh semua data milik sendiri."
+  }
+ ]
+}

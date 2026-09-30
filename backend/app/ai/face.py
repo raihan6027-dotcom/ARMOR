@@ -191,4 +191,13 @@ class FaceAI:
         return faces
 
 
-face_ai = FaceAI()
+def _make_engine():
+    if settings.face_engine == "fake":
+        from app.ai.face_fake import FakeFaceAI
+
+        logger.warning("FACE_ENGINE=fake: development/e2e only, never for real faces")
+        return FakeFaceAI()
+    return FaceAI()
+
+
+face_ai = _make_engine()

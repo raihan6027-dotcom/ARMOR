@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     # --- Local models (downloaded beforehand so the demo runs offline) ---
     model_dir: str = ""  # empty => <repo>/ml/models
     insightface_model: str = "buffalo_l"
+    # insightface (real model) | fake (dev/e2e only, refused in production)
+    face_engine: str = "insightface"
 
     # --- Face AI thresholds ---
     # PLACEHOLDERS until ml/face_eval produces real values (docs/eval/face.md).
@@ -97,6 +99,8 @@ class Settings(BaseSettings):
                 problems.append("CORS_ORIGINS must list the frontend origin, not '*'")
             if not self.armor_embedding_key:
                 problems.append("ARMOR_EMBEDDING_KEY is not set")
+            if self.face_engine != "insightface":
+                problems.append("FACE_ENGINE must be insightface in production")
             if self.bcrypt_rounds < 12:
                 problems.append("BCRYPT_ROUNDS must be at least 12")
         return problems
