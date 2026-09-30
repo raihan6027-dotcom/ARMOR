@@ -15,7 +15,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | 5 | Selesai | `94052da` |
 | 6 | Selesai | `8233412` |
 | 6b | Selesai | `4e67ec2` |
-| 7 | Belum | |
+| 7 | Selesai | (lihat log di bawah) |
 | 8 | Belum | |
 | 9 | Belum | |
 | 10a | Belum | |
@@ -42,7 +42,11 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | Sedang | Tinjau teks persetujuan lapis 1 | Enrollment wajah dan suara | Baca `docs/consent-text/face-v1.md` dan `voice-v1.md`; jika diubah, buat versi baru (misalnya `face-v2.md`) dan naikkan `CONSENT_TEXT_FACE`. |
 | Sedang | Tunjuk peninjau dan admin | Konsol peninjau, banding, sengketa | Setelah akun mereka mendaftar: `cd backend` lalu `python -m app.cli role grant --email <email> --role REVIEWER` (atau `ADMIN`). |
 | Rendah | Aktifkan email (opsional, bukan untuk demo offline) | Notifikasi email | Isi `EMAIL_ENABLED=true`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` di `backend/.env` dengan akun SMTP tim. |
+| Sedang | Ekspor desain Claude Design (jika tim memakainya) | Kesesuaian tampilan dengan desain tim | Semua layar Fase 7 diturunkan dari CLAUDE.md bagian 10 dan `docs/design/intro-reference.dc.html`. Jika ada ekspor Claude Design, simpan di `docs/design/` lalu jalankan `/fase 7` untuk menyelaraskan layar yang berbeda. |
+| Sedang | Uji aplikasi di ponsel asli dengan pembaca layar | Aksesibilitas nyata, kamera depan, pemasangan PWA | Jalankan backend dan `npm run dev` di `app/`, buka dari ponsel di jaringan yang sama (atur `NEXT_PUBLIC_API_URL` ke IP laptop dan tambahkan origin ponsel ke `CORS_ORIGINS`), coba enrollment dengan kamera depan dan navigasi dengan TalkBack. |
 | Sedang | Sambungkan repo ke GitHub (privat) agar CI jalan | CI, kerja paralel 4 anggota | Buat repo privat kosong di GitHub, lalu di `E:\armor`: `git remote add origin <url>` dan `git push -u origin main`. |
+
+
 
 ## Log per fase
 
@@ -102,3 +106,11 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 - **Ringkasan:** Requester bisa mengizinkan prompt-nya dipakai untuk perbaikan model (bawaan mati; klausul di `docs/TERMS.md`). Hasil manusia (REVIEW yang selesai, jawaban consent, banding dan koreksi label peninjau) menjadi label di tabel `feedback`, tanpa media. Tim mengekspor dan memeriksa feedback, lalu `ml/retrain.py` melatih ulang Intent AI atau Risk AI dan hanya memakai model baru jika macro F1 dan recall kelas berbahaya di set uji beku tidak turun. Setiap percobaan tercatat di `versions.json` dan `docs/eval/retrain.md`; versi yang pernah dipakai bisa dikembalikan. `model_version` sudah tercatat di setiap log keputusan sejak Fase 4.
 - **Hasil tes:** backend 335 lulus, 1 dilewati; `ml/` 25 lulus (termasuk tes model lebih buruk ditolak); ruff bersih.
 - **Perlu diperiksa manusia:** klausul ketentuan layanan. Retrain nyata menunggu feedback dari pemakaian aplikasi.
+
+### Fase 7: aplikasi
+
+- **Commit:** (lihat tabel status). Bagian: 7a `2920578` (+ perbaikan `fd70a0e`), 7b `ccf8da2`, 7c `203ed1f`.
+- **Ringkasan:** Aplikasi Next.js 16 mobile-first dan PWA di `app/`, tersambung ke semua endpoint backend lewat klien bertipe dari OpenAPI, diekspor statis agar bisa jalan offline. Semua layar 1 sampai 12 CLAUDE.md bagian 10 selesai: intro dan sambutan, cara kerja, daftar/masuk, enrollment wajah dengan persetujuan lapis 1 dan kamera tiga sudut (cadangan unggah berkas), beranda, periksa dan hasil beserta alasan dan saran, banding, kotak consent (cakupan, masa berlaku, cabut, blokir), identitas (Lock, izin intent x media, lingkaran tepercaya), aktivitas, data saya (unduh, hapus dua langkah), notifikasi, akun, kasus, ketentuan dan privasi (draf). Teks persetujuan dan legal diambil dari `docs/` saat build. Tidak ada ekspor Claude Design, sehingga semua layar diturunkan dari CLAUDE.md bagian 10 dan `intro-reference.dc.html`: intro/sambutan (langsung dari referensi), cara kerja, daftar, masuk, enroll, beranda, periksa, hasil, banding, consent, detail consent, identitas, izin, lingkaran, aktivitas, data saya, notifikasi, akun, kasus, ketentuan, privasi.
+- **Hasil tes:** `tsc` dan ESLint bersih; build statis 24 rute; Playwright 4 lulus (alur intro, daftar, enroll kamera palsu, periksa, hasil; periksa teks; axe WCAG 2.1 AA tanpa pelanggaran di 5 layar publik dan 12 layar setelah masuk); Lighthouse aksesibilitas: intro 95, layar publik lain 100. Backend 337 lulus, 1 dilewati.
+- **Catatan:** commit `2920578` masuk dengan 3 tes backend gagal (kode keluar pytest tertutup `| tail`, tes membaca `.env` pengembang); diperbaiki di `fd70a0e`. Server statis sederhana (misalnya `python -m http.server`) memberi 404 untuk berkas prefetch segmen Next (`__next.<rute>.__PAGE__.txt`, sedangkan berkasnya di `__next.<rute>/__PAGE__.txt`); navigasi tetap jalan karena Next jatuh ke pengambilan biasa. Penyajian dari backend di Fase 12 memetakan nama itu.
+- **Perlu diperiksa manusia:** tampilan di ponsel asli dan dengan TalkBack; semua teks UI; kesesuaian dengan desain tim; draf `docs/PRIVACY.md` dan `docs/TERMS.md` (difinalkan di Fase 11).

@@ -48,14 +48,18 @@ Setiap dependensi baru wajib dicatat di sini beserta lisensi dan kegunaannya (CL
 | google-genai (Gemini) | CLAUDE.md bagian 12: tidak boleh ada panggilan API AI pihak ketiga di jalur utama | Dihapus seluruhnya di Fase 5 (identifikasi di Fase 3, intent di Fase 4, risk di Fase 5) |
 | `official_face_registry.pkl` (galeri 6.114 wajah tokoh) | Data biometrik tanpa persetujuan | Dihapus di Fase 3 |
 
-## Frontend (rencana Fase 7)
+## Frontend (Fase 7)
 
 | Teknologi | Lisensi | Kegunaan |
 | --- | --- | --- |
-| Next.js (App Router, TypeScript) | MIT | Aplikasi mobile-first dan PWA |
-| Big Shoulders Display / Stencil Display | SIL OFL 1.1 | Judul, wordmark, slogan |
+| Next.js 16 (App Router, TypeScript, ekspor statis) | MIT | Aplikasi mobile-first dan PWA, bisa disajikan offline dari backend |
+| React 19 | MIT | UI |
+| openapi-fetch + openapi-typescript | MIT | Klien API bertipe dari `backend/openapi.json` |
+| Big Shoulders / Big Shoulders Stencil (lewat `next/font/google`, di-host sendiri saat build) | SIL OFL 1.1 | Judul, wordmark, slogan. Nama "Big Shoulders Display" sekarang diterbitkan sebagai "Big Shoulders" dengan sumbu `opsz`. |
 | Atkinson Hyperlegible | SIL OFL 1.1 | Teks isi |
-| Playwright | Apache-2.0 | Tes alur end-to-end |
+| Playwright | Apache-2.0 | Tes alur end-to-end (Chrome terpasang di Windows, Chromium Playwright di CI) |
+| axe-core (`@axe-core/playwright`) | MPL-2.0 | Pemeriksaan aksesibilitas WCAG 2.1 AA semua layar di e2e |
+| Lighthouse (dijalankan lewat `npx`, tidak dipasang) | Apache-2.0 | Skor aksesibilitas layar publik |
 
 ## Alat pengembangan
 
