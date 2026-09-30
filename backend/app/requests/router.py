@@ -41,6 +41,7 @@ def create_request(
         video_bytes=video,
         audio_bytes=audio,
         media_type=media_type_for(payload.media_type, image, video, audio),
+        allow_training=payload.allow_training,
     )
     return RequestDecisionResponse(**result)
 

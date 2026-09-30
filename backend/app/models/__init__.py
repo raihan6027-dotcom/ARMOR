@@ -4,6 +4,7 @@ from app.models.audit import AuditLog
 from app.models.biometric_consent import BiometricConsent
 from app.models.case import Case, CaseEvent
 from app.models.consent import Consent
+from app.models.feedback import Feedback
 from app.models.identity import Identity
 from app.models.notification import Notification
 from app.models.owner import Block, CircleMember
@@ -20,6 +21,7 @@ __all__ = [
     "CaseEvent",
     "CircleMember",
     "Consent",
+    "Feedback",
     "Identity",
     "Notification",
     "Permission",

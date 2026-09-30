@@ -55,6 +55,7 @@ from app.services import (
     audit_service,
     circle_service,
     consent_service,
+    feedback_service,
     identity_service,
     notify_service,
     permission_service,
@@ -250,6 +251,7 @@ def orchestrate(
     media_type: Optional[MediaType] = None,
     video_bytes: Optional[bytes] = None,
     audio_bytes: Optional[bytes] = None,
+    allow_training: bool = False,
 ) -> dict:
     limiter.check(f"gateway:{requester_user_id}", settings.gateway_requests_per_minute, 60)
     started = time.perf_counter()
@@ -321,6 +323,7 @@ def orchestrate(
             requester_id=requester_user_id,
             prompt=prompt,
             media_type=route.media_type.value,
+            allow_training=allow_training,
             intent_original=intent.value,
             intent_confidence=intent_res.get("confidence"),
             risk_score=risk_res.get("risk_score"),
@@ -459,6 +462,8 @@ def reevaluate(db: Session, request_id: str) -> Optional[Request]:
     for s, d in zip(stored, result.per_target_detail, strict=True):
         s.decision, s.reason_code = d.decision.value, d.reason_code
     _after_decision(db, row, result, consents, "DECISION_REEVALUATED")
+    if row.status == "FINAL":
+        feedback_service.record(db, row, "REVIEW_RESOLVED")
     if row.decision != previous:
         notify_service.notify(
             db,

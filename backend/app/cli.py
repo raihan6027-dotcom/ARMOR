@@ -5,6 +5,7 @@ python -m app.cli role revoke --email peninjau@example.com
 python -m app.cli platform create --email dev@platform.example --password <kata-sandi>
 python -m app.cli logs purge [--days 90]
 python -m app.cli audit verify
+python -m app.cli feedback export [--out ../ml/feedback/feedback.csv]
 """
 
 from __future__ import annotations
@@ -14,10 +15,11 @@ import json
 import sys
 import uuid
 from datetime import timedelta
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.core.config import REPO_ROOT, settings
 from app.core.security import hash_password
 from app.core.timeutil import now
 from app.db.database import SessionLocal, init_db
@@ -27,9 +29,10 @@ from app.models.notification import Notification
 from app.models.request import Request
 from app.models.request_target import RequestTarget
 from app.models.user import User
-from app.services import audit_service
+from app.services import audit_service, feedback_service
 
 GRANTABLE = ("REVIEWER", "ADMIN")
+FEEDBACK_CSV = REPO_ROOT / "ml" / "feedback" / "feedback.csv"
 
 
 def _user(db: Session, email: str) -> User:
@@ -134,6 +137,9 @@ def main(argv: list[str] | None = None) -> int:
     lp.add_argument("--days", type=int, default=settings.log_retention_days)
     audit = sub.add_parser("audit").add_subparsers(dest="cmd", required=True)
     audit.add_parser("verify")
+    fb = sub.add_parser("feedback").add_subparsers(dest="cmd", required=True)
+    fe = fb.add_parser("export")
+    fe.add_argument("--out", default=str(FEEDBACK_CSV))
     args = ap.parse_args(argv)
 
     init_db()
@@ -144,6 +150,9 @@ def main(argv: list[str] | None = None) -> int:
             print(role_revoke(db, args.email))
         elif args.group == "platform":
             print(platform_create(db, args.email, args.password))
+        elif args.group == "feedback":
+            n = feedback_service.export_csv(db, Path(args.out))
+            print(f"{n} baris feedback -> {args.out}. Periksa dan isi diperiksa_oleh.")
         elif args.group == "logs":
             print(json.dumps(purge_logs(db, args.days)))
         else:

@@ -14,7 +14,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | 4 | Selesai | `f8b16bb` |
 | 5 | Selesai | `94052da` |
 | 6 | Selesai | `8233412` |
-| 6b | Belum | |
+| 6b | Selesai | (lihat log di bawah) |
 | 7 | Belum | |
 | 8 | Belum | |
 | 9 | Belum | |
@@ -95,3 +95,10 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 - **Ringkasan:** Gateway kini lewat Media Router dan mencatat waktu tiap tahap; video dan audio ditandai tidak tersedia (gagal aman) sampai Fase 9 dan 10b. Keputusan REVIEW ditahan (HELD) dan otomatis dinilai ulang begitu pemilik menjawab consent, lalu requester mendapat notifikasi. Consent punya cakupan dan masa berlaku (sekali pakai, 1/7/30 hari, tanggal), bisa dicabut, kedaluwarsa otomatis, dan pengirim bisa diblokir; batas 3 permintaan per hari per identitas. Lingkaran tepercaya, notifikasi (email opsional), audit log berantai hash dengan verifikasi, dasbor aktivitas, dan kasus banding/sengketa lengkap dengan peran peninjau, pembekuan, pindah kepemilikan, dan hapus pendaftaran palsu. CLI untuk peran, akun platform, pembersihan log 90 hari. Unggahan divalidasi dari isi berkas dan ukurannya dibatasi.
 - **Hasil tes:** 330 lulus, 1 dilewati, 0 gagal; cakupan `app/` 94%, `app/policy` 100%; ruff bersih.
 - **Perlu diperiksa manusia:** alur peninjau dan teks notifikasi. Skema basis data berubah lagi (hapus `backend/armor.db` lokal).
+
+### Fase 6b: loop pembelajaran
+
+- **Commit:** (lihat tabel status)
+- **Ringkasan:** Requester bisa mengizinkan prompt-nya dipakai untuk perbaikan model (bawaan mati; klausul di `docs/TERMS.md`). Hasil manusia (REVIEW yang selesai, jawaban consent, banding dan koreksi label peninjau) menjadi label di tabel `feedback`, tanpa media. Tim mengekspor dan memeriksa feedback, lalu `ml/retrain.py` melatih ulang Intent AI atau Risk AI dan hanya memakai model baru jika macro F1 dan recall kelas berbahaya di set uji beku tidak turun. Setiap percobaan tercatat di `versions.json` dan `docs/eval/retrain.md`; versi yang pernah dipakai bisa dikembalikan. `model_version` sudah tercatat di setiap log keputusan sejak Fase 4.
+- **Hasil tes:** backend 335 lulus, 1 dilewati; `ml/` 25 lulus (termasuk tes model lebih buruk ditolak); ruff bersih.
+- **Perlu diperiksa manusia:** klausul ketentuan layanan. Retrain nyata menunggu feedback dari pemakaian aplikasi.

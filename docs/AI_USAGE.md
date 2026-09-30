@@ -70,3 +70,9 @@ Alat: **Claude Code** (model Claude Opus 5.5, Anthropic), dijalankan oleh anggot
 - **Tes yang disesuaikan:** jalur jawaban consent berubah menjadi `POST /consent/{id}/respond` sesuai prompt fase, sehingga `tests/api/test_consent.py` ditulis ulang dan tes keamanan 3b memakai jalur baru. Kamera sintetis kini menghasilkan PNG asli agar lolos validasi tipe berkas.
 - **Verifikasi otomatis:** 330 tes lulus (1 dilewati), cakupan seluruh `app/` 94%, `app/policy` 100%, ruff bersih.
 - **Perlu diverifikasi manusia:** alur peninjau di dunia nyata (siapa yang menjadi peninjau), teks notifikasi, dan penjadwalan `logs purge` di laptop demo.
+
+## Fase 6b: loop pembelajaran
+
+- **Dikerjakan dengan Claude Code:** persetujuan opsional `allow_training` di permintaan (bawaan mati) dan klausulnya di `docs/TERMS.md` (draf); tabel `feedback` yang diisi dari REVIEW yang selesai, jawaban consent, dan hasil banding termasuk koreksi label peninjau, hanya untuk prompt yang diizinkan dan tanpa media; `python -m app.cli feedback export` yang mempertahankan tanda periksa tim; `ml/retrain.py` untuk Intent AI dan Risk AI: gabungan data asli dan feedback yang sudah diperiksa, set uji beku yang tidak pernah menerima feedback, gerbang evaluasi (macro F1 dan recall kelas berbahaya tidak boleh turun), registri versi, rollback, dan laporan `docs/eval/retrain.md`.
+- **Verifikasi otomatis:** tes gerbang melatih model dengan feedback beracun (prompt berbahaya dilabeli tidak berbahaya) dan memastikan model itu ditolak, model aktif tidak berubah, dan berkasnya tidak disimpan; feedback bersih diterima; rollback ke versi lama berhasil, versi yang ditolak tidak bisa dipulihkan. Backend 335 tes lulus (1 dilewati), `ml/` 25 tes lulus, ruff bersih.
+- **Perlu diverifikasi manusia:** teks klausul di `docs/TERMS.md`, dan pemeriksaan feedback sebelum retrain.

@@ -36,7 +36,7 @@ from app.models.request import Request
 from app.models.request_target import RequestTarget
 from app.models.user import User
 from app.schema.common import BiometricMedia, Decision, Intent, LockLevel, RiskLevel
-from app.services import audit_service, identity_service, notify_service
+from app.services import audit_service, feedback_service, identity_service, notify_service
 
 STATUS_ID = {"SUBMITTED": "Diajukan", "REVIEWING": "Ditinjau", "RESOLVED": "Selesai"}
 APPEAL_OUTCOMES = ("UPHOLD", "RELABEL")
@@ -445,6 +445,13 @@ def resolve(
                     "RELABEL_NEEDS_LABEL", "Give the corrected intent and/or risk level.", 422
                 )
             _relabel(db, req, corrected_intent, corrected_risk)
+        feedback_service.record(
+            db,
+            req,
+            f"APPEAL_{outcome}",
+            corrected_intent.value if corrected_intent else None,
+            corrected_risk.value if corrected_risk else None,
+        )
     else:
         identity = db.query(Identity).filter(Identity.identity_id == case.identity_id).first()
         if identity is None and outcome != "REJECT":

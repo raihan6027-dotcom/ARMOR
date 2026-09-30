@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.timeutil import now
@@ -19,6 +19,8 @@ class Request(Base):
     prompt: Mapped[str] = mapped_column(Text)
     media_type: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
+    # The requester agreed that this prompt may be used to improve the models (6b).
+    allow_training: Mapped[bool] = mapped_column(Boolean, default=False)
     # FINAL, or HELD while waiting for consent; re-evaluated when owners answer.
     status: Mapped[str] = mapped_column(String(16), default="FINAL")
 

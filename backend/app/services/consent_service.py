@@ -339,6 +339,15 @@ def respond(
             "validity": consent.validity,
         },
     )
+    held = (
+        db.query(Request).filter(Request.request_id == consent.request_id).first()
+        if consent.request_id
+        else None
+    )
+    if held is not None:
+        from app.services import feedback_service  # local import: keeps the module light
+
+        feedback_service.record(db, held, f"CONSENT_{consent.status}")
     notify_service.notify(
         db,
         consent.requester_id,

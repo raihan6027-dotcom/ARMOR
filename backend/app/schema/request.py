@@ -15,6 +15,9 @@ class RequestCreate(BaseModel):
     audio: Optional[str] = None
     # Derived from the attached media when omitted.
     media_type: Optional[MediaType] = None
+    # Optional opt-in: the prompt (never the media) may be used to improve ARMOR's
+    # models after human review (see docs/TERMS.md).
+    allow_training: bool = False
 
     model_config = {
         "json_schema_extra": {
