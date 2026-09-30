@@ -15,7 +15,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | 5 | Selesai | `94052da` |
 | 6 | Selesai | `8233412` |
 | 6b | Selesai | `4e67ec2` |
-| 7 | Selesai | (lihat log di bawah) |
+| 7 | Selesai | `8a805e5` |
 | 8 | Belum | |
 | 9 | Belum | |
 | 10a | Belum | |
@@ -109,7 +109,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 
 ### Fase 7: aplikasi
 
-- **Commit:** (lihat tabel status). Bagian: 7a `2920578` (+ perbaikan `fd70a0e`), 7b `ccf8da2`, 7c `203ed1f`.
+- **Commit:** `8a805e5`. Bagian: 7a `2920578` (+ perbaikan `fd70a0e`), 7b `ccf8da2`, 7c `203ed1f`.
 - **Ringkasan:** Aplikasi Next.js 16 mobile-first dan PWA di `app/`, tersambung ke semua endpoint backend lewat klien bertipe dari OpenAPI, diekspor statis agar bisa jalan offline. Semua layar 1 sampai 12 CLAUDE.md bagian 10 selesai: intro dan sambutan, cara kerja, daftar/masuk, enrollment wajah dengan persetujuan lapis 1 dan kamera tiga sudut (cadangan unggah berkas), beranda, periksa dan hasil beserta alasan dan saran, banding, kotak consent (cakupan, masa berlaku, cabut, blokir), identitas (Lock, izin intent x media, lingkaran tepercaya), aktivitas, data saya (unduh, hapus dua langkah), notifikasi, akun, kasus, ketentuan dan privasi (draf). Teks persetujuan dan legal diambil dari `docs/` saat build. Tidak ada ekspor Claude Design, sehingga semua layar diturunkan dari CLAUDE.md bagian 10 dan `intro-reference.dc.html`: intro/sambutan (langsung dari referensi), cara kerja, daftar, masuk, enroll, beranda, periksa, hasil, banding, consent, detail consent, identitas, izin, lingkaran, aktivitas, data saya, notifikasi, akun, kasus, ketentuan, privasi.
 - **Hasil tes:** `tsc` dan ESLint bersih; build statis 24 rute; Playwright 4 lulus (alur intro, daftar, enroll kamera palsu, periksa, hasil; periksa teks; axe WCAG 2.1 AA tanpa pelanggaran di 5 layar publik dan 12 layar setelah masuk); Lighthouse aksesibilitas: intro 95, layar publik lain 100. Backend 337 lulus, 1 dilewati.
 - **Catatan:** commit `2920578` masuk dengan 3 tes backend gagal (kode keluar pytest tertutup `| tail`, tes membaca `.env` pengembang); diperbaiki di `fd70a0e`. Server statis sederhana (misalnya `python -m http.server`) memberi 404 untuk berkas prefetch segmen Next (`__next.<rute>.__PAGE__.txt`, sedangkan berkasnya di `__next.<rute>/__PAGE__.txt`); navigasi tetap jalan karena Next jatuh ke pengambilan biasa. Penyajian dari backend di Fase 12 memetakan nama itu.
