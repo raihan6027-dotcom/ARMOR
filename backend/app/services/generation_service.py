@@ -46,7 +46,9 @@ def _own_allowed(db: Session, request_id: str, user_id: str) -> Request:
         raise NotFoundError(f"Request '{request_id}' not found.")
     if row.decision != Decision.ALLOW.value or row.status != "FINAL":
         raise ArmorError(
-            "REQUEST_NOT_ALLOWED", "Only a request with a final ALLOW decision can be generated.", 409
+            "REQUEST_NOT_ALLOWED",
+            "Only a request with a final ALLOW decision can be generated.",
+            409,
         )
     return row
 
@@ -63,7 +65,9 @@ def _check_media(row: Request, image: Optional[bytes]) -> None:
         return
     if image is None or media_sha256(image) != row.input_sha256:
         raise ArmorError(
-            "MEDIA_MISMATCH", "Send exactly the same image that ARMOR checked for this request.", 409
+            "MEDIA_MISMATCH",
+            "Send exactly the same image that ARMOR checked for this request.",
+            409,
         )
 
 

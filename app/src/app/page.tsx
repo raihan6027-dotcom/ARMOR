@@ -115,6 +115,7 @@ export default function IntroPage() {
           <div className={`${s.actions} ${s.rise}`} style={{ animationDelay: "0.6s" }}>
             <PrimaryLink href="/daftar/">Lindungi identitas saya</PrimaryLink>
             <TextLink href="/cara-kerja/">Lihat cara kerja ARMOR</TextLink>
+            <TextLink href="/verifikasi/">Periksa apakah gambar dibuat lewat ARMOR</TextLink>
             <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 15 }}>
               Sudah punya akun? <Link href="/masuk/">Masuk</Link>
             </p>

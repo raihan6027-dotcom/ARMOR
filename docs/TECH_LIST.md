@@ -38,7 +38,7 @@ Setiap dependensi baru wajib dicatat di sini beserta lisensi dan kegunaannya (CL
 | IndoBERT `indobenchmark/indobert-base-p1` (IndoNLU) + Hugging Face transformers (Apache-2.0) + PyTorch (BSD-3) | Cek lisensi checkpoint sebelum pengumpulan | Pembanding Intent AI (`ml/intent/train_indobert.py`, GPU) | Skrip siap, belum dijalankan (butuh GPU) |
 | rapidfuzz | MIT | Pencocokan nama/alias | Rencana Fase 10a |
 | spaCy | MIT | NER sederhana | Rencana Fase 10a (atau regex) |
-| imagehash | BSD-2 | Perceptual hash ARMOR Shield | Rencana Fase 8 |
+| ImageHash 4.3.2 | BSD-2 | Perceptual hash ARMOR Shield | Dipakai (Fase 8, `backend/app/services/shield_service.py`) |
 | AudioSeal | MIT (kode), cek lisensi bobot | Watermark audio ARMOR Shield | Rencana Fase 10b |
 
 ## Warisan yang akan dihapus
@@ -47,6 +47,19 @@ Setiap dependensi baru wajib dicatat di sini beserta lisensi dan kegunaannya (CL
 | --- | --- | --- |
 | google-genai (Gemini) | CLAUDE.md bagian 12: tidak boleh ada panggilan API AI pihak ketiga di jalur utama | Dihapus seluruhnya di Fase 5 (identifikasi di Fase 3, intent di Fase 4, risk di Fase 5) |
 | `official_face_registry.pkl` (galeri 6.114 wajah tokoh) | Data biometrik tanpa persetujuan | Dihapus di Fase 3 |
+
+## Setelah keputusan: generator, Output Guard, ARMOR Shield (Fase 8)
+
+| Teknologi | Lisensi | Kegunaan |
+| --- | --- | --- |
+| Pillow (`PngInfo` iTXt/tEXt, `ImageDraw`) | MIT-CMU (HPND) | Label "Dibuat dengan AI · ARMOR", manifest di metadata PNG, generator tiruan |
+| ImageHash 4.3 (dan dependensinya SciPy, PyWavelets) | BSD-2-Clause (SciPy BSD-3, PyWavelets MIT) | Perceptual hash (pHash) untuk registri Shield |
+| httpx | BSD-3-Clause | Klien backend ke layanan generator |
+| generator_mock (buatan tim) | Kode proyek | Generator AI tiruan untuk demo offline, ditandai SIMULASI |
+| diffusers + PyTorch (opsional, tidak dipasang bawaan) | Apache-2.0 / BSD-3-Clause | Adapter generator lokal sungguhan jika ada GPU |
+| Stable Diffusion 1.5 (opsional, bobot diunduh tim) | CreativeML OpenRAIL-M (pembatasan penggunaan wajib diteruskan ke pengguna) | Model generatif lokal untuk adapter `diffusers` |
+
+Manifest Shield mengikuti bentuk C2PA (claim generator, asersi `c2pa.actions` dengan `digitalSourceType` trainedAlgorithmicMedia) tetapi **bukan** manifest C2PA resmi: disimpan di chunk iTXt, bukan JUMBF, dan ditandatangani HMAC-SHA256 dengan kunci server, bukan sertifikat X.509.
 
 ## Frontend (Fase 7)
 

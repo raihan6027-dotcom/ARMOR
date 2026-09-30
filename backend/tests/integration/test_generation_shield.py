@@ -119,7 +119,12 @@ def test_swapping_the_checked_image_is_refused(client, people):
 
 
 def test_only_final_allow_can_be_generated(client, people):
-    denied = ask(client, people["A"], "Buat orang ini memakai baju tahanan dan diborgol.", image(face("citra")))
+    denied = ask(
+        client,
+        people["A"],
+        "Buat orang ini memakai baju tahanan dan diborgol.",
+        image(face("citra")),
+    )
     held = ask(client, people["A"], AD, image(face("sinta")))
     assert denied["decision"]["action"] == "DENY" and held["status"] == "HELD"
     for d, img in ((denied, image(face("citra"))), (held, image(face("sinta")))):
@@ -172,9 +177,14 @@ def test_owner_who_consented_may_appear_in_output(client, people):
     img = image(face("sinta"))
     d = ask(client, people["A"], AD, img)
     client.post("/consent/request", json={"request_id": d["request_id"]}, headers=people["A"])
-    cid = client.get("/consent/inbox?status=pending", headers=people["B"]).json()["items"][0]["consent_id"]
+    cid = client.get("/consent/inbox?status=pending", headers=people["B"]).json()["items"][0][
+        "consent_id"
+    ]
     client.post(f"/consent/{cid}/respond", json={"action": "APPROVE"}, headers=people["B"])
-    assert client.get(f"/requests/{d['request_id']}", headers=people["A"]).json()["decision"]["action"] == "ALLOW"
+    assert (
+        client.get(f"/requests/{d['request_id']}", headers=people["A"]).json()["decision"]["action"]
+        == "ALLOW"
+    )
 
     set_generator(FixedGenerator(png=image_bytes(face("sinta"))))
     out = gen(client, people["A"], d["request_id"], img).json()
@@ -188,7 +198,7 @@ def test_data_export_lists_shield_records(client, people):
     gen(client, people["A"], d["request_id"], img)
     data = client.get("/me/data", headers=people["A"]).json()
     assert len(data["shield_records"]) == 1
-    assert data["requests"][0]["output_status"] == "DELIVERED"
+    assert data["requests_made"][0]["output_status"] == "DELIVERED"
 
 
 # --- Public verification --------------------------------------------------------------
@@ -230,7 +240,9 @@ def test_edited_pixels_with_valid_metadata_are_not_exact(client, delivered):
     png = decode(delivered["image"]).convert("RGB")
     png.putpixel((5, 5), (0, 0, 0))
     info = PngInfo()
-    info.add_itxt(shield_service.MANIFEST_KEY, decode(delivered["image"]).text[shield_service.MANIFEST_KEY])
+    info.add_itxt(
+        shield_service.MANIFEST_KEY, decode(delivered["image"]).text[shield_service.MANIFEST_KEY]
+    )
     body = client.post("/shield/verify", json={"image": b64(png, pnginfo=info)}).json()
     assert body["verified"] is True and body["method"] == "PERCEPTUAL" and body["exact"] is False
 

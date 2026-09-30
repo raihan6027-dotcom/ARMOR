@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 
 // Accessibility scan (axe, the same rule engine Lighthouse uses) of every screen,
 // including the ones behind sign-in that Lighthouse cannot reach on its own.
-const PUBLIC = ["/daftar/", "/masuk/", "/cara-kerja/", "/ketentuan/", "/privasi/"];
+const PUBLIC = ["/daftar/", "/masuk/", "/cara-kerja/", "/ketentuan/", "/privasi/", "/verifikasi/"];
 const SIGNED_IN = [
   "/beranda/",
   "/periksa/",

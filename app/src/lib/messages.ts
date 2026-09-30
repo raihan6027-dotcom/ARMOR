@@ -35,6 +35,10 @@ const MESSAGES: Record<string, string> = {
   APPEAL_NOT_APPLICABLE: "Hanya keputusan ditolak yang bisa dibanding.",
   NO_MATCHING_ENROLLMENT: "Wajahmu tidak cocok dengan pendaftaran di akun lain.",
   CIRCLE_SELF: "Kamu tidak perlu menambahkan dirimu sendiri.",
+  REQUEST_NOT_ALLOWED: "Hasil hanya bisa dibuat untuk permintaan yang sudah diizinkan.",
+  MEDIA_MISMATCH: "Berkasnya berbeda dari yang diperiksa. Periksa ulang dengan berkas ini.",
+  GENERATOR_UNAVAILABLE: "Generator sedang tidak tersedia. Coba lagi sebentar lagi.",
+  GENERATION_NOT_SUPPORTED: "Pembuatan hasil untuk jenis media ini belum tersedia.",
 };
 
 const QUALITY: Record<string, string> = {

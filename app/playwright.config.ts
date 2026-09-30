@@ -2,11 +2,12 @@ import { defineConfig, devices } from "@playwright/test";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-// End-to-end tests drive the real backend (FAKE face engine, throwaway database)
-// and the static build of the app. Build first: `npm run build`.
+// End-to-end tests drive the real backend (FAKE face engine, throwaway database),
+// the simulated generator, and the static build of the app. Build first: `npm run build`.
 const venv = resolve(__dirname, "..", "backend", ".venv");
 const python = `"${process.platform === "win32" ? join(venv, "Scripts", "python.exe") : join(venv, "bin", "python")}"`;
 const backendDir = `"${resolve(__dirname, "..", "backend")}"`;
+const generatorDir = `"${resolve(__dirname, "..", "generator_mock")}"`;
 const db = join(tmpdir(), `armor-e2e-${Date.now()}.db`).replace(/\\/g, "/");
 
 export default defineConfig({
@@ -39,7 +40,15 @@ export default defineConfig({
         FACE_ENGINE: "fake",
         BCRYPT_ROUNDS: "4",
         MODEL_DIR: join(tmpdir(), "armor-e2e-models"),
+        GENERATOR: "mock",
+        GENERATOR_URL: "http://127.0.0.1:8300",
       },
+    },
+    {
+      // Simulated generator (generator_mock/), used after an ALLOW decision.
+      command: `${python} -m uvicorn armor_generator_mock.service:app --app-dir ${generatorDir} --port 8300`,
+      url: "http://127.0.0.1:8300/health",
+      reuseExistingServer: false,
     },
     {
       command: `${python} -m http.server 3100 --directory out`,

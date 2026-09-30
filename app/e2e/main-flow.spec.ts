@@ -3,8 +3,7 @@ import { expect, test } from "@playwright/test";
 // A tiny valid PNG; the backend's FAKE face engine treats any decodable image as
 // one clear face of the enrolled test person (development only).
 const PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AAIU" +
-    "EQE8AAAXBgFB0KFeXAAAAABJRU5ErkJggg==",
+  "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAO0lEQVR4nO3RQREAMAjEwKOCq6RyEFgJ4cMvK+CYCdXvZtNZXY8HBvwBMhEyETIRMhEyETIRMhEyUcgH7AUB7n4K9RoAAAAASUVORK5CYII=",
   "base64",
 );
 
@@ -53,7 +52,27 @@ test("intro -> daftar -> enroll (kamera palsu) -> periksa -> hasil", async ({ pa
 
   await expect(page.getByRole("heading", { name: "Memeriksa" })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "ALLOW" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("1 wajah")).toBeVisible(); // the face really went through Face AI (SELF)
   await expect(page.getByText("Dibuat dengan AI · ARMOR")).toBeVisible();
+
+  // After ALLOW: generate through the simulated generator, Output Guard, and Shield.
+  await page.getByRole("button", { name: "Buat hasil" }).click();
+  await expect(page.getByRole("img", { name: /Hasil dari generator/ })).toBeVisible({ timeout: 20_000 });
+  const download = page.getByRole("link", { name: "Unduh hasil" });
+  const href = await download.getAttribute("href");
+  expect(href).toMatch(/^data:image\/png;base64,/);
+
+  // Public verification of that very file, signed out.
+  await page.evaluate(() => window.localStorage.clear());
+  await page.goto("/verifikasi/");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "hasil.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(href!.split(",")[1], "base64"),
+  });
+  await page.getByRole("button", { name: "Periksa keaslian" }).click();
+  await expect(page.getByRole("heading", { name: "Dibuat lewat ARMOR" })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("Metadata bertanda tangan ARMOR di dalam berkas")).toBeVisible();
 });
 
 test("periksa teks berbahaya tanpa orang menghasilkan keputusan dengan alasan", async ({ page }) => {

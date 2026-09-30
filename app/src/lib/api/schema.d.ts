@@ -444,6 +444,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/requests/{request_id}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate
+         * @description Setelah ALLOW: buat konten lewat generator, periksa ulang hasilnya dengan Output
+         *     Guard, lalu pasang ARMOR Shield (label AI, metadata, hash). Kirim ulang gambar yang
+         *     sama persis dengan yang diperiksa (media tidak disimpan). Jika hasil memuat wajah
+         *     terdaftar yang tidak diizinkan, hasil ditahan (HELD) dan pemiliknya diberi tahu.
+         */
+        post: operations["generate_requests__request_id__generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/logs": {
         parameters: {
             query?: never;
@@ -728,6 +751,29 @@ export interface paths {
         get: operations["verify_audit_chain_audit_verify_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shield/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify
+         * @description Verifikasi publik tanpa login: apakah gambar ini dibuat lewat ARMOR, kapan, dan
+         *     status izinnya. Diperiksa berurutan: metadata bertanda tangan, hash, lalu
+         *     perceptual hash. Jawaban tidak pernah memuat prompt, pembuat, atau siapa yang ada
+         *     di gambar.
+         */
+        post: operations["verify_shield_verify_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1045,6 +1091,41 @@ export interface components {
             consent: components["schemas"]["ConsentAgreement"];
             /** Note */
             note?: string | null;
+        };
+        /**
+         * GenerateRequest
+         * @description The very same image ARMOR checked (base64); omit for a text-only request.
+         */
+        GenerateRequest: {
+            /** Image */
+            image?: string | null;
+        };
+        /** GenerateResponse */
+        GenerateResponse: {
+            /** Request Id */
+            request_id: string;
+            /** Status */
+            status: string;
+            /** Image */
+            image?: string | null;
+            /** Message */
+            message: string;
+            shield?: components["schemas"]["ShieldInfo"] | null;
+            generator: components["schemas"]["GeneratorInfo"];
+            /**
+             * Timing Ms
+             * @default {}
+             */
+            timing_ms: {
+                [key: string]: number;
+            };
+        };
+        /** GeneratorInfo */
+        GeneratorInfo: {
+            /** Name */
+            name: string;
+            /** Simulated */
+            simulated: boolean;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1536,6 +1617,19 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** ShieldInfo */
+        ShieldInfo: {
+            /** Shield Id */
+            shield_id: string;
+            /** Created At */
+            created_at: string;
+            /** Permission Status */
+            permission_status: string;
+            /** Permission Text */
+            permission_text: string;
+            /** Label */
+            label: string;
+        };
         /** TargetDetail */
         TargetDetail: {
             source: components["schemas"]["TargetSource"];
@@ -1575,6 +1669,53 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** VerifyRequest */
+        VerifyRequest: {
+            /**
+             * Image
+             * @description Gambar yang ingin diperiksa (base64 PNG/JPEG/WebP).
+             */
+            image: string;
+        };
+        /**
+         * VerifyResponse
+         * @example {
+         *       "created_at": "2026-09-30T08:15:02Z",
+         *       "exact": true,
+         *       "message": "Gambar ini dibuat lewat ARMOR dan tidak diubah sejak itu.",
+         *       "metadata_found": true,
+         *       "metadata_valid": true,
+         *       "method": "METADATA",
+         *       "permission_status": "POLICY_ALLOWED",
+         *       "permission_text": "Diizinkan oleh kebijakan ARMOR.",
+         *       "simulated_generator": true,
+         *       "verified": true
+         *     }
+         */
+        VerifyResponse: {
+            /** Verified */
+            verified: boolean;
+            /** Method */
+            method: string;
+            /** Exact */
+            exact: boolean;
+            /** Created At */
+            created_at?: string | null;
+            /** Permission Status */
+            permission_status?: string | null;
+            /** Permission Text */
+            permission_text?: string | null;
+            /** Distance */
+            distance?: number | null;
+            /** Metadata Found */
+            metadata_found: boolean;
+            /** Metadata Valid */
+            metadata_valid: boolean;
+            /** Simulated Generator */
+            simulated_generator?: boolean | null;
+            /** Message */
+            message: string;
         };
     };
     responses: never;
@@ -2401,6 +2542,41 @@ export interface operations {
             };
         };
     };
+    generate_requests__request_id__generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_logs_logs_get: {
         parameters: {
             query?: {
@@ -2907,6 +3083,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    verify_shield_verify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

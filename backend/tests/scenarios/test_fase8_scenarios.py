@@ -80,7 +80,10 @@ def test_scenario_15_safe_prompt_but_output_has_face_b_is_held(client, people):
         notes = db.query(Notification).filter_by(user_id=people["B_user"]).all()
         assert [n.kind for n in notes] == ["OUTPUT_GUARD"]
         # A is not notified about their own face.
-        assert db.query(Notification).filter_by(user_id=people["A_user"], kind="OUTPUT_GUARD").count() == 0
+        assert (
+            db.query(Notification).filter_by(user_id=people["A_user"], kind="OUTPUT_GUARD").count()
+            == 0
+        )
 
 
 def test_scenario_16_output_of_scenario_3_is_verified_publicly(client, people):
@@ -111,7 +114,9 @@ def test_scenario_16_output_of_scenario_3_is_verified_publicly(client, people):
     shielded = Image.open(io.BytesIO(base64.b64decode(out["image"])))
     stripped = io.BytesIO()
     shielded.save(stripped, format="PNG")
-    v2 = client.post("/shield/verify", json={"image": base64.b64encode(stripped.getvalue()).decode()})
+    v2 = client.post(
+        "/shield/verify", json={"image": base64.b64encode(stripped.getvalue()).decode()}
+    )
     assert v2.json()["verified"] is True and v2.json()["method"] == "HASH"
 
     jpeg = io.BytesIO()

@@ -1174,6 +1174,64 @@
     }
    }
   },
+  "/requests/{request_id}/generate": {
+   "post": {
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Generate",
+    "description": "Setelah ALLOW: buat konten lewat generator, periksa ulang hasilnya dengan Output\nGuard, lalu pasang ARMOR Shield (label AI, metadata, hash). Kirim ulang gambar yang\nsama persis dengan yang diperiksa (media tidak disimpan). Jika hasil memuat wajah\nterdaftar yang tidak diizinkan, hasil ditahan (HELD) dan pemiliknya diberi tahu.",
+    "operationId": "generate_requests__request_id__generate_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "request_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Request Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GenerateRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GenerateResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/logs": {
    "get": {
     "tags": [
@@ -1904,6 +1962,48 @@
       "HTTPBearer": []
      }
     ]
+   }
+  },
+  "/shield/verify": {
+   "post": {
+    "tags": [
+     "Shield"
+    ],
+    "summary": "Verify",
+    "description": "Verifikasi publik tanpa login: apakah gambar ini dibuat lewat ARMOR, kapan, dan\nstatus izinnya. Diperiksa berurutan: metadata bertanda tangan, hash, lalu\nperceptual hash. Jawaban tidak pernah memuat prompt, pembuat, atau siapa yang ada\ndi gambar.",
+    "operationId": "verify_shield_verify_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VerifyRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/VerifyResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
    }
   },
   "/": {
@@ -2740,6 +2840,98 @@
     ],
     "title": "DisputeCreate",
     "description": "Re-verify your own face live (three captures, like enrollment)."
+   },
+   "GenerateRequest": {
+    "properties": {
+     "image": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Image"
+     }
+    },
+    "type": "object",
+    "title": "GenerateRequest",
+    "description": "The very same image ARMOR checked (base64); omit for a text-only request."
+   },
+   "GenerateResponse": {
+    "properties": {
+     "request_id": {
+      "type": "string",
+      "title": "Request Id"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "image": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Image"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message"
+     },
+     "shield": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ShieldInfo"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "generator": {
+      "$ref": "#/components/schemas/GeneratorInfo"
+     },
+     "timing_ms": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "Timing Ms",
+      "default": {}
+     }
+    },
+    "type": "object",
+    "required": [
+     "request_id",
+     "status",
+     "message",
+     "generator"
+    ],
+    "title": "GenerateResponse"
+   },
+   "GeneratorInfo": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "simulated": {
+      "type": "boolean",
+      "title": "Simulated"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "simulated"
+    ],
+    "title": "GeneratorInfo"
    },
    "HTTPValidationError": {
     "properties": {
@@ -3904,6 +4096,39 @@
     ],
     "title": "RiskResponse"
    },
+   "ShieldInfo": {
+    "properties": {
+     "shield_id": {
+      "type": "string",
+      "title": "Shield Id"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "permission_status": {
+      "type": "string",
+      "title": "Permission Status"
+     },
+     "permission_text": {
+      "type": "string",
+      "title": "Permission Text"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     }
+    },
+    "type": "object",
+    "required": [
+     "shield_id",
+     "created_at",
+     "permission_status",
+     "permission_text",
+     "label"
+    ],
+    "title": "ShieldInfo"
+   },
    "TargetDetail": {
     "properties": {
      "source": {
@@ -4020,6 +4245,127 @@
      "type"
     ],
     "title": "ValidationError"
+   },
+   "VerifyRequest": {
+    "properties": {
+     "image": {
+      "type": "string",
+      "title": "Image",
+      "description": "Gambar yang ingin diperiksa (base64 PNG/JPEG/WebP)."
+     }
+    },
+    "type": "object",
+    "required": [
+     "image"
+    ],
+    "title": "VerifyRequest"
+   },
+   "VerifyResponse": {
+    "properties": {
+     "verified": {
+      "type": "boolean",
+      "title": "Verified"
+     },
+     "method": {
+      "type": "string",
+      "title": "Method"
+     },
+     "exact": {
+      "type": "boolean",
+      "title": "Exact"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "permission_status": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Permission Status"
+     },
+     "permission_text": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Permission Text"
+     },
+     "distance": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Distance"
+     },
+     "metadata_found": {
+      "type": "boolean",
+      "title": "Metadata Found"
+     },
+     "metadata_valid": {
+      "type": "boolean",
+      "title": "Metadata Valid"
+     },
+     "simulated_generator": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Simulated Generator"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message"
+     }
+    },
+    "type": "object",
+    "required": [
+     "verified",
+     "method",
+     "exact",
+     "metadata_found",
+     "metadata_valid",
+     "message"
+    ],
+    "title": "VerifyResponse",
+    "examples": [
+     {
+      "created_at": "2026-09-30T08:15:02Z",
+      "exact": true,
+      "message": "Gambar ini dibuat lewat ARMOR dan tidak diubah sejak itu.",
+      "metadata_found": true,
+      "metadata_valid": true,
+      "method": "METADATA",
+      "permission_status": "POLICY_ALLOWED",
+      "permission_text": "Diizinkan oleh kebijakan ARMOR.",
+      "simulated_generator": true,
+      "verified": true
+     }
+    ]
    }
   },
   "securitySchemes": {
@@ -4061,6 +4407,10 @@
   {
    "name": "Data saya",
    "description": "Unduh semua data milik sendiri."
+  },
+  {
+   "name": "Shield",
+   "description": "Verifikasi publik: apakah sebuah gambar dibuat lewat ARMOR."
   }
  ]
 }

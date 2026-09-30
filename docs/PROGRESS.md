@@ -16,7 +16,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | 6 | Selesai | `8233412` |
 | 6b | Selesai | `4e67ec2` |
 | 7 | Selesai | `8a805e5` |
-| 8 | Belum | |
+| 8 | Selesai | (lihat log di bawah) |
 | 9 | Belum | |
 | 10a | Belum | |
 | 10b | Belum | |
@@ -42,6 +42,9 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | Sedang | Tinjau teks persetujuan lapis 1 | Enrollment wajah dan suara | Baca `docs/consent-text/face-v1.md` dan `voice-v1.md`; jika diubah, buat versi baru (misalnya `face-v2.md`) dan naikkan `CONSENT_TEXT_FACE`. |
 | Sedang | Tunjuk peninjau dan admin | Konsol peninjau, banding, sengketa | Setelah akun mereka mendaftar: `cd backend` lalu `python -m app.cli role grant --email <email> --role REVIEWER` (atau `ADMIN`). |
 | Rendah | Aktifkan email (opsional, bukan untuk demo offline) | Notifikasi email | Isi `EMAIL_ENABLED=true`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` di `backend/.env` dengan akun SMTP tim. |
+| Tinggi | Jalankan evaluasi Output Guard dengan foto relawan | Angka Output Guard Bab 7 | Setelah data `ml/face_eval/data/relawan/` dan model `buffalo_l` ada: `python ml/output_guard_eval/guard_eval.py` (hasil ke `docs/eval/output-guard.md`). |
+| Sedang | Siapkan demo skenario 15 (Output Guard) | Naskah demo | Simpan foto wajah relawan B di `generator_mock/test_inject/`, jalankan generator dengan `GENERATOR_TEST_MODE=inject_face GENERATOR_INJECT_DIR=test_inject` (lihat `generator_mock/README.md`). |
+| Rendah | Generator lokal sungguhan (opsional) | Demo dengan model generatif asli | Hanya jika ada laptop dengan GPU CUDA: ikuti bagian Stable Diffusion di `ml/models/README.md`, baca lisensi CreativeML OpenRAIL-M, lalu `GENERATOR=auto`. |
 | Sedang | Ekspor desain Claude Design (jika tim memakainya) | Kesesuaian tampilan dengan desain tim | Semua layar Fase 7 diturunkan dari CLAUDE.md bagian 10 dan `docs/design/intro-reference.dc.html`. Jika ada ekspor Claude Design, simpan di `docs/design/` lalu jalankan `/fase 7` untuk menyelaraskan layar yang berbeda. |
 | Sedang | Uji aplikasi di ponsel asli dengan pembaca layar | Aksesibilitas nyata, kamera depan, pemasangan PWA | Jalankan backend dan `npm run dev` di `app/`, buka dari ponsel di jaringan yang sama (atur `NEXT_PUBLIC_API_URL` ke IP laptop dan tambahkan origin ponsel ke `CORS_ORIGINS`), coba enrollment dengan kamera depan dan navigasi dengan TalkBack. |
 | Sedang | Sambungkan repo ke GitHub (privat) agar CI jalan | CI, kerja paralel 4 anggota | Buat repo privat kosong di GitHub, lalu di `E:\armor`: `git remote add origin <url>` dan `git push -u origin main`. |
@@ -114,3 +117,11 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 - **Hasil tes:** `tsc` dan ESLint bersih; build statis 24 rute; Playwright 4 lulus (alur intro, daftar, enroll kamera palsu, periksa, hasil; periksa teks; axe WCAG 2.1 AA tanpa pelanggaran di 5 layar publik dan 12 layar setelah masuk); Lighthouse aksesibilitas: intro 95, layar publik lain 100. Backend 337 lulus, 1 dilewati.
 - **Catatan:** commit `2920578` masuk dengan 3 tes backend gagal (kode keluar pytest tertutup `| tail`, tes membaca `.env` pengembang); diperbaiki di `fd70a0e`. Server statis sederhana (misalnya `python -m http.server`) memberi 404 untuk berkas prefetch segmen Next (`__next.<rute>.__PAGE__.txt`, sedangkan berkasnya di `__next.<rute>/__PAGE__.txt`); navigasi tetap jalan karena Next jatuh ke pengambilan biasa. Penyajian dari backend di Fase 12 memetakan nama itu.
 - **Perlu diperiksa manusia:** tampilan di ponsel asli dan dengan TalkBack; semua teks UI; kesesuaian dengan desain tim; draf `docs/PRIVACY.md` dan `docs/TERMS.md` (difinalkan di Fase 11).
+
+### Fase 8: generator tiruan, Output Guard, ARMOR Shield
+
+- **Commit:** (lihat tabel status). Sebagian pekerjaan ini sudah masuk lebih dulu lewat commit `c44a5cd` ("initial commit") dari akun tim.
+- **Ringkasan:** Jalur setelah ALLOW kini lengkap. `generator_mock/` mensimulasikan AI generatif (ditandai SIMULASI) dan punya mode uji yang menempelkan wajah ke hasil. Backend memilih generator lewat `GeneratorAdapter` (mock bawaan, Stable Diffusion lokal opsional). `POST /requests/{id}/generate` hanya melayani keputusan ALLOW final dengan media yang sama persis dengan yang diperiksa. Output Guard memeriksa ulang hasil dengan Face AI; wajah terdaftar yang tidak diizinkan, wajah tidak jelas, atau Face AI yang tidak tersedia membuat hasil ditahan, dicatat, dan pemiliknya diberi tahu. ARMOR Shield memberi label terlihat, manifest bergaya C2PA bertanda tangan di metadata PNG, serta hash dan perceptual hash di registri. `POST /shield/verify` dan halaman `/verifikasi/` bisa dipakai siapa saja tanpa login. Tombol "Buat hasil" ada di layar Periksa. Skrip evaluasi Output Guard siap, menunggu data relawan.
+- **Hasil tes:** backend 357 lulus, 1 dilewati (termasuk skenario 15 dan 16); `generator_mock` 15 lulus; `ml/` 28 lulus; ruff bersih; `tsc` dan ESLint bersih; Playwright 4 lulus.
+- **Catatan:** PNG di tes Playwright Fase 7 ternyata rusak (langkah periksa berjalan tanpa wajah); sudah diganti dan tes memastikan wajah terdeteksi. Skema basis data berubah (tabel `shield_records`, kolom baru di `requests`): hapus `backend/armor.db` lokal. Remote `origin` berisi 3 commit yang menghapus `CLAUDE.md`, `docs/PROMPTS.md`, dan `.claude/`; belum digabung dan belum di-push, menunggu keputusan tim.
+- **Perlu diperiksa manusia:** demo skenario 15 dengan wajah asli; kebijakan zona abu-abu pada hasil; teks label dan halaman verifikasi.

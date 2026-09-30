@@ -36,6 +36,12 @@ jobs:
         run: |
           pip install -r ../ml/requirements.txt
           pytest -q ../ml -p no:cacheprovider
+      - name: Ruff dan pytest (generator_mock)
+        working-directory: generator_mock
+        run: |
+          ruff check .
+          ruff format --check .
+          pytest -q -p no:cacheprovider
 
   app:
     runs-on: ubuntu-latest

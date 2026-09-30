@@ -169,4 +169,6 @@ def generate(
         img = from_text(prompt)
     if inject_face is not None:
         img = inject(img, _decode(inject_face))
-    return Output(png=to_png(img, style, inject_face is not None), style=style, injected=bool(inject_face))
+    return Output(
+        png=to_png(img, style, inject_face is not None), style=style, injected=bool(inject_face)
+    )

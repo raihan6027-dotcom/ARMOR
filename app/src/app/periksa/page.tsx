@@ -21,6 +21,7 @@ import {
   TextLink,
 } from "@/components/ui";
 import { ApiError, api, call, raw } from "@/lib/api";
+import type { components } from "@/lib/api/schema";
 import { errorText, RISK_LABEL } from "@/lib/messages";
 
 import s from "./periksa.module.css";
@@ -175,7 +176,7 @@ function Check() {
   if (phase === "result" && result) {
     return (
       <Screen title="Hasil" tabs>
-        <ResultView result={result} kind={kind} onSuggestion={(t) => { setPrompt(t); void run(t); }} onEdit={() => restart(true)} onNew={() => { setFile(null); setPhase("pick"); setResult(null); setPrompt(""); }} />
+        <ResultView result={result} kind={kind} file={file} onSuggestion={(t) => { setPrompt(t); void run(t); }} onEdit={() => restart(true)} onNew={() => { setFile(null); setPhase("pick"); setResult(null); setPrompt(""); }} />
       </Screen>
     );
   }
@@ -299,12 +300,14 @@ function stepsFromResult(r: Result): { label: string; state: StepState; note?: s
 function ResultView({
   result,
   kind,
+  file,
   onSuggestion,
   onEdit,
   onNew,
 }: {
   result: Result;
   kind: Kind;
+  file: File | null;
   onSuggestion: (text: string) => void;
   onEdit: () => void;
   onNew: () => void;
@@ -320,18 +323,7 @@ function ResultView({
       <Stamp status={d.action} />
       <p style={{ textAlign: "center", fontSize: 18 }}>{d.reason}</p>
 
-      {d.action === "ALLOW" ? (
-        <Card>
-          <Stack gap={10}>
-            <span className={s.shieldLabel}>
-              <Icon name="shieldCheck" size={18} /> Dibuat dengan AI · ARMOR
-            </span>
-            <p style={{ color: "var(--muted)" }}>
-              Hasil dari generator selalu diberi label ini agar orang lain tahu konten tersebut buatan AI.
-            </p>
-          </Stack>
-        </Card>
-      ) : null}
+      {d.action === "ALLOW" ? <GenerateCard requestId={current.request_id} kind={kind} file={file} /> : null}
 
       {d.action === "REVIEW" ? (
         <ReviewActions result={current} failSafe={failSafe} unclear={unclearIntent} blurry={blurry && kind === "IMAGE"} onEdit={onEdit} onUpdate={setCurrent} />
@@ -442,5 +434,95 @@ function ReviewActions({
         </>
       )}
     </Stack>
+  );
+}
+
+type Generated = components["schemas"]["GenerateResponse"];
+
+const PERMISSION_NOTE: Record<string, string> = {
+  POLICY_ALLOWED: "Diizinkan oleh kebijakan ARMOR.",
+  OWNER_PERMITTED: "Diizinkan oleh pemilik identitas yang ada di dalamnya.",
+};
+
+function GenerateCard({ requestId, kind, file }: { requestId: string; kind: Kind; file: File | null }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [out, setOut] = useState<Generated | null>(null);
+  const supported = kind === "IMAGE" || kind === "TEXT_ONLY";
+
+  async function generate() {
+    setBusy(true);
+    setError(null);
+    try {
+      const body = kind === "IMAGE" && file ? { image: await toDataUrl(file) } : {};
+      const res = await call(
+        api.POST("/requests/{request_id}/generate", { params: { path: { request_id: requestId } }, body }),
+      );
+      setOut(res as Generated);
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const label = (
+    <span className={s.shieldLabel}>
+      <Icon name="shieldCheck" size={18} /> Dibuat dengan AI · ARMOR
+    </span>
+  );
+
+  if (out?.status === "DELIVERED" && out.image) {
+    const src = `data:image/png;base64,${out.image}`;
+    return (
+      <Card>
+        <Stack gap={12}>
+          {label}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={src} alt="Hasil dari generator, sudah diberi label AI" className={s.preview} />
+          <p style={{ color: "var(--muted)" }}>
+            {out.shield ? PERMISSION_NOTE[out.shield.permission_status] : null} Hasil ini tercatat di registri ARMOR
+            Shield, jadi siapa pun bisa memeriksa keasliannya.
+          </p>
+          {out.generator.simulated ? (
+            <p style={{ color: "var(--dim)", fontSize: 14 }}>
+              Generator di prototipe ini adalah simulasi sederhana, bukan model AI generatif.
+            </p>
+          ) : null}
+          <a className={s.download} href={src} download={`armor-${requestId.slice(0, 8)}.png`}>
+            <Icon name="download" size={18} /> Unduh hasil
+          </a>
+          <TextLink href="/verifikasi/">Cara memeriksa keaslian gambar</TextLink>
+        </Stack>
+      </Card>
+    );
+  }
+
+  if (out?.status === "HELD") {
+    return (
+      <Stack gap={10}>
+        <Banner error>{out.message}</Banner>
+        <p style={{ color: "var(--muted)" }}>Ubah prompt agar hasilnya tidak memuat wajah orang lain, lalu periksa lagi.</p>
+      </Stack>
+    );
+  }
+
+  return (
+    <Card>
+      <Stack gap={12}>
+        {label}
+        <p style={{ color: "var(--muted)" }}>
+          {supported
+            ? "Hasil dari generator diperiksa ulang oleh Output Guard, lalu diberi label ini agar orang lain tahu konten tersebut buatan AI."
+            : "Pembuatan hasil untuk video dan audio belum tersedia di prototipe ini."}
+        </p>
+        {error ? <Banner error>{error}</Banner> : null}
+        {supported ? (
+          <PrimaryButton onClick={generate} disabled={busy}>
+            {busy ? "Membuat hasil..." : "Buat hasil"}
+          </PrimaryButton>
+        ) : null}
+      </Stack>
+    </Card>
   );
 }

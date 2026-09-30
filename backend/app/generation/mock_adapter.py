@@ -46,8 +46,9 @@ class MockGeneratorAdapter:
             png = base64.b64decode(data["image"], validate=True)
         except (KeyError, binascii.Error, ValueError) as exc:
             raise GeneratorUnavailable("generator_mock returned no image") from exc
+        name = f"{data.get('generator', 'armor-generator-mock')} {data.get('version', '')}"
         return GeneratedImage(
             png=png,
-            generator=f"{data.get('generator', 'armor-generator-mock')} {data.get('version', '')}".strip(),
+            generator=name.strip(),
             simulated=bool(data.get("simulated", True)),
         )

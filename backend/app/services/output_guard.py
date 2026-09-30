@@ -15,10 +15,11 @@ affected owner is notified.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from app.ai.face import face_ai
+from app.ai.face import DetectedFace, face_ai
 from app.models.request import Request
 from app.models.request_target import RequestTarget
 from app.schema.common import Decision, IdentityTarget
@@ -52,17 +53,19 @@ def allowed_identities(db: Session, row: Request) -> set[str]:
     return {r.identity_id for r in rows}
 
 
-def check(db: Session, row: Request, output: bytes) -> GuardResult:
-    faces = face_ai.analyze(output)
+def judge(
+    faces: Optional[list[DetectedFace]],
+    requester_user_id: str,
+    index: list,
+    allowed: set[str],
+) -> GuardResult:
+    """The Output Guard rule on already-detected faces (None = Face AI unavailable).
+    Pure: also used by ml/output_guard_eval so the evaluation measures this code."""
     if faces is None:
         return GuardResult(passed=False, reasons=[HELD_UNAVAILABLE])
     result = GuardResult(passed=True, faces=len(faces))
-    if not faces:
-        return result
-    index = identity_service.registered_face_embeddings(db)
-    allowed = allowed_identities(db, row)
     for face in faces:
-        match = identity_service.classify_face(face, row.requester_id, index)
+        match = identity_service.classify_face(face, requester_user_id, index)
         face.embedding = None  # nothing about faces in the output is kept
         if match.target in (IdentityTarget.SELF, IdentityTarget.OTHER_UNREGISTERED):
             continue
@@ -78,3 +81,10 @@ def check(db: Session, row: Request, output: bytes) -> GuardResult:
         if identity_id and identity_id not in result.blocked_identity_ids:
             result.blocked_identity_ids.append(identity_id)
     return result
+
+
+def check(db: Session, row: Request, output: bytes) -> GuardResult:
+    faces = face_ai.analyze(output)
+    index = identity_service.registered_face_embeddings(db) if faces else []
+    allowed = allowed_identities(db, row) if faces else set()
+    return judge(faces, row.requester_id, index, allowed)

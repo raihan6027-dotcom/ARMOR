@@ -60,9 +60,7 @@ def _mock_generator():
     """Every test generates through the real generator_mock app, in-process."""
     from armor_generator_mock.service import app as generator_app
 
-    set_generator(
-        MockGeneratorAdapter("http://generator", 5, client=TestClient(generator_app))
-    )
+    set_generator(MockGeneratorAdapter("http://generator", 5, client=TestClient(generator_app)))
     yield
     set_generator(None)
     limiter.reset()

@@ -138,7 +138,9 @@ class Shielded:
     manifest: dict
 
 
-def apply(db: Session, row: Request, output: Image.Image, generator: str, simulated: bool) -> Shielded:
+def apply(
+    db: Session, row: Request, output: Image.Image, generator: str, simulated: bool
+) -> Shielded:
     labelled = draw_label(output)
     shield_id = str(uuid.uuid4())
     created = now()
@@ -314,6 +316,11 @@ def verify(db: Session, data: bytes) -> dict:
             best = (rec, d)
     if best[0] is not None and best[1] <= settings.shield_phash_max_distance:
         return _result(
-            best[0], "PERCEPTUAL", False, metadata_found=found, metadata_valid=valid, distance=best[1]
+            best[0],
+            "PERCEPTUAL",
+            False,
+            metadata_found=found,
+            metadata_valid=valid,
+            distance=best[1],
         )
     return _result(None, "NONE", False, metadata_found=found, metadata_valid=valid)
