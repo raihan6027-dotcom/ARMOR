@@ -13,7 +13,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | 3 | Selesai | `6c1cef7` |
 | 4 | Selesai | `f8b16bb` |
 | 5 | Selesai | `94052da` |
-| 6 | Selesai | (lihat log di bawah) |
+| 6 | Selesai | `8233412` |
 | 6b | Belum | |
 | 7 | Belum | |
 | 8 | Belum | |
@@ -91,7 +91,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 
 ### Fase 6: gateway lengkap dan fitur pemilik
 
-- **Commit:** (lihat tabel status)
+- **Commit:** `8233412`
 - **Ringkasan:** Gateway kini lewat Media Router dan mencatat waktu tiap tahap; video dan audio ditandai tidak tersedia (gagal aman) sampai Fase 9 dan 10b. Keputusan REVIEW ditahan (HELD) dan otomatis dinilai ulang begitu pemilik menjawab consent, lalu requester mendapat notifikasi. Consent punya cakupan dan masa berlaku (sekali pakai, 1/7/30 hari, tanggal), bisa dicabut, kedaluwarsa otomatis, dan pengirim bisa diblokir; batas 3 permintaan per hari per identitas. Lingkaran tepercaya, notifikasi (email opsional), audit log berantai hash dengan verifikasi, dasbor aktivitas, dan kasus banding/sengketa lengkap dengan peran peninjau, pembekuan, pindah kepemilikan, dan hapus pendaftaran palsu. CLI untuk peran, akun platform, pembersihan log 90 hari. Unggahan divalidasi dari isi berkas dan ukurannya dibatasi.
 - **Hasil tes:** 330 lulus, 1 dilewati, 0 gagal; cakupan `app/` 94%, `app/policy` 100%; ruff bersih.
 - **Perlu diperiksa manusia:** alur peninjau dan teks notifikasi. Skema basis data berubah lagi (hapus `backend/armor.db` lokal).
