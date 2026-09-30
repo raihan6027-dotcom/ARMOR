@@ -104,19 +104,12 @@ def test_3b_only_owner_can_respond_to_consent(client, accounts):
     client.post("/consent/request", json={"request_id": request_id}, headers=accounts["atk"])
     cid = client.get("/consent/inbox", headers=accounts["owner"]).json()["items"][0]["consent_id"]
 
-    r = client.post("/consent/respond", json={"consent_id": cid, "decision": "APPROVED"})
+    # Fase 6: POST /consent/{id}/respond with an action.
+    r = client.post(f"/consent/{cid}/respond", json={"action": "APPROVE"})
     assert r.status_code == 401
-    r = client.post(
-        "/consent/respond",
-        json={"consent_id": cid, "decision": "APPROVED"},
-        headers=accounts["atk"],
-    )
+    r = client.post(f"/consent/{cid}/respond", json={"action": "APPROVE"}, headers=accounts["atk"])
     assert r.status_code == 403
-    r = client.post(
-        "/consent/respond",
-        json={"consent_id": cid, "decision": "DENIED"},
-        headers=accounts["owner"],
-    )
+    r = client.post(f"/consent/{cid}/respond", json={"action": "DENY"}, headers=accounts["owner"])
     assert r.status_code == 200
     assert r.json()["status"] == "DENIED"
 

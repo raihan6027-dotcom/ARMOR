@@ -43,19 +43,33 @@ Tes berjalan offline tanpa model: wajah diganti "kamera sintetis" (`tests/synthe
 
 | Endpoint | Metode | Siapa | Kegunaan |
 | --- | --- | --- | --- |
-| `/auth/register`, `/auth/login`, `/auth/me` | POST/POST/GET | semua | Akun dan JWT |
+| `/auth/register`, `/auth/login`, `/auth/me` | POST/POST/GET/PATCH | semua | Akun, JWT, profil, sakelar notifikasi email |
 | `/identity/enroll` | POST | pemilik | Daftarkan wajah sendiri (3 pose + persetujuan lapis 1) |
-| `/identity/verify` | POST | pemilik | Cek foto terhadap wajah sendiri |
-| `/identity/profile` | GET | pemilik | Status identitas, Lock, media terdaftar |
+| `/identity/verify`, `/identity/profile` | POST/GET | pemilik | Cek foto terhadap wajah sendiri; status identitas |
 | `/identity/lock` | POST | pemilik | Lock per media: NONE, COMMERCIAL_POLITICAL, ALL |
-| `/identity/me/revoke?media=FACE\|VOICE` | POST | pemilik | Cabut persetujuan satu media, embedding dihapus |
-| `/identity/me` | DELETE | pemilik | Hapus semua data identitas |
+| `/identity/me/revoke?media=FACE\|VOICE`, `/identity/me` | POST/DELETE | pemilik | Cabut persetujuan satu media; hapus semua data identitas |
 | `/me/data` | GET | pengguna | Unduh semua data milik sendiri (tanpa embedding mentah) |
 | `/permissions` | GET/POST | pemilik | Izin per intent x media |
-| `/requests` | POST/GET | pengguna | Gateway: periksa permintaan; riwayat milik sendiri |
-| `/consent/request` | POST | requester | Minta persetujuan untuk permintaan REVIEW milik sendiri |
-| `/consent/request/{request_id}` | GET | requester | Status persetujuan (gabungan) |
-| `/consent/inbox`, `/consent/respond` | GET/POST | pemilik | Kotak consent dan jawabannya |
+| `/circle`, `/circle/{member_ref}` | GET/POST/DELETE | pemilik | Lingkaran tepercaya dengan cakupan dan masa berlaku |
+| `/requests`, `/requests/{id}` | POST/GET | pengguna | Gateway (gambar, video, audio, teks); riwayat dan status terbaru |
+| `/consent/request`, `/consent/request/{request_id}` | POST/GET | requester | Minta persetujuan untuk permintaan REVIEW milik sendiri; status gabungan |
+| `/consent/inbox`, `/consent/{id}` | GET | pemilik | Kotak consent (menunggu/dijawab), detail |
+| `/consent/{id}/respond`, `/consent/{id}/revoke` | POST | pemilik | Setujui dengan cakupan dan masa berlaku, tolak, blokir; cabut |
+| `/notifications`, `/notifications/read` | GET/POST | pengguna | Notifikasi dalam aplikasi |
+| `/dashboard/activity` | GET | pemilik | Upaya penggunaan identitas per minggu |
+| `/cases`, `/cases/dispute`, `/cases/{id}` | POST/POST/GET | pengguna | Banding atas DENY, sengketa pendaftaran palsu, status kasus |
+| `/cases/{id}/review`, `/freeze`, `/resolve`, `/assign` | POST | peninjau/admin | Konsol peninjau |
+| `/audit/verify` | GET | peninjau/admin | Periksa integritas rantai hash audit log |
 | `/decision` | POST | semua | Evaluasi policy tanpa status (untuk demo dan uji) |
 
 Semua error memakai amplop `{"error": {"code", "message", "details?"}}`.
+
+## CLI admin
+
+```bash
+python -m app.cli role grant --email peninjau@example.com --role REVIEWER   # atau ADMIN
+python -m app.cli role revoke --email peninjau@example.com
+python -m app.cli platform create --email dev@platform.example --password <minimal 12 karakter>
+python -m app.cli logs purge --days 90       # jalankan harian (Task Scheduler / cron)
+python -m app.cli audit verify
+```

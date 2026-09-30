@@ -8,13 +8,12 @@ from app.db.database import get_db
 from app.models.user import User
 from app.schema.common import ConsentStatus
 from app.schema.consent import (
+    ConsentAnswer,
     ConsentInboxResponse,
+    ConsentItem,
     ConsentRequest,
     ConsentRequestResponse,
     ConsentRequestStatusResponse,
-    ConsentRespondRequest,
-    ConsentRespondResponse,
-    ConsentStatusResponse,
 )
 from app.services import consent_service
 
@@ -27,8 +26,8 @@ def request_consent(
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
-    """Ask for consent on your own REVIEW request. The answer is the same whether or
-    not anyone in the media is registered."""
+    """Minta persetujuan untuk permintaan REVIEW milikmu. Jawabannya sama, entah ada
+    orang terdaftar di media itu atau tidak."""
     consent_service.request_for(
         db, request.request_id, current.user_id, request.intent, request.media
     )
@@ -51,35 +50,51 @@ def consent_inbox(
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
-    """Consent requests about identities you own."""
-    return ConsentInboxResponse(items=consent_service.inbox(db, current.user_id, status))
+    """Kotak consent: permintaan atas identitas milikmu."""
+    return ConsentInboxResponse(
+        items=consent_service.inbox(db, current.user_id, status),
+        pending=consent_service.pending_count(db, current.user_id),
+    )
 
 
-@router.get("/status/{consent_id}", response_model=ConsentStatusResponse)
-def get_consent_status(
+@router.get("/{consent_id}", response_model=ConsentItem)
+def get_consent(
     consent_id: str,
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
     consent = consent_service.get_for_owner(db, consent_id, current.user_id)
-    return ConsentStatusResponse(
-        consent_id=consent.consent_id,
-        identity_id=consent.identity_id,
-        status=ConsentStatus(consent.status),
-        request_id=consent.request_id,
-        intent=consent.intent,
-        media=consent.media,
-    )
+    return consent_service.as_owner_dict(db, consent)
 
 
-@router.post("/respond", response_model=ConsentRespondResponse)
+@router.post("/{consent_id}/respond", response_model=ConsentItem)
 def respond_consent(
-    request: ConsentRespondRequest,
+    consent_id: str,
+    answer: ConsentAnswer,
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
-    consent = consent_service.respond(db, request.consent_id, request.decision, current.user_id)
-    return ConsentRespondResponse(
-        consent_id=consent.consent_id,
-        status=ConsentStatus(consent.status),
+    """Setujui dengan cakupan dan masa berlaku, tolak, atau blokir pengirim. Permintaan
+    yang tertahan langsung dinilai ulang."""
+    consent = consent_service.respond(
+        db,
+        consent_id,
+        current.user_id,
+        answer.action,
+        answer.intent,
+        answer.media,
+        answer.validity,
+        answer.until,
     )
+    return consent_service.as_owner_dict(db, consent)
+
+
+@router.post("/{consent_id}/revoke", response_model=ConsentItem)
+def revoke_consent(
+    consent_id: str,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+):
+    """Cabut persetujuan yang sudah diberikan. Sejak saat itu dianggap tidak ada."""
+    consent = consent_service.revoke(db, consent_id, current.user_id)
+    return consent_service.as_owner_dict(db, consent)

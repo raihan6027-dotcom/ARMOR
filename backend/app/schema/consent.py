@@ -1,4 +1,5 @@
-from typing import Optional
+from datetime import datetime
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
@@ -24,16 +25,7 @@ class ConsentRequestStatusResponse(BaseModel):
     status: ConsentStatus
 
 
-class ConsentStatusResponse(BaseModel):
-    consent_id: str
-    identity_id: str
-    status: ConsentStatus
-    request_id: Optional[str] = None
-    intent: Optional[str] = None
-    media: Optional[str] = None
-
-
-class ConsentInboxItem(BaseModel):
+class ConsentItem(BaseModel):
     consent_id: str
     identity_id: str
     requester_email: Optional[str] = None
@@ -42,19 +34,38 @@ class ConsentInboxItem(BaseModel):
     prompt: Optional[str] = None
     media_type: Optional[str] = None
     status: ConsentStatus
+    # PENDING | GRANTED | DENIED | REVOKED | EXPIRED | USED
+    state: str
+    validity: Optional[str] = None
+    expires_at: Optional[str] = None
+    answered_at: Optional[str] = None
     created_at: Optional[str] = None
 
 
 class ConsentInboxResponse(BaseModel):
-    items: list[ConsentInboxItem]
+    items: list[ConsentItem]
+    pending: int
 
 
-class ConsentRespondRequest(BaseModel):
-    consent_id: str
-    decision: str  # APPROVED | DENIED (also accepts GRANTED/DENY etc; normalized)
+class ConsentAnswer(BaseModel):
+    """APPROVE with a scope and validity, DENY, or BLOCK (deny and block the sender)."""
 
+    action: Literal["APPROVE", "DENY", "BLOCK"]
+    intent: Optional[Intent] = None  # narrow the scope; default = what was asked
+    media: Optional[BiometricMedia] = None
+    validity: Literal["ONCE", "DAYS_1", "DAYS_7", "DAYS_30", "UNTIL"] = "ONCE"
+    until: Optional[datetime] = None  # required when validity = UNTIL
 
-class ConsentRespondResponse(BaseModel):
-    consent_id: str
-    status: ConsentStatus
-    message: str = "Consent response recorded successfully"
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "action": "APPROVE",
+                    "intent": "COMMERCIAL_USE",
+                    "media": "FACE",
+                    "validity": "DAYS_7",
+                },
+                {"action": "BLOCK"},
+            ]
+        }
+    }

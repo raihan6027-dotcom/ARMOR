@@ -13,7 +13,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | 3 | Selesai | `6c1cef7` |
 | 4 | Selesai | `f8b16bb` |
 | 5 | Selesai | `94052da` |
-| 6 | Belum | |
+| 6 | Selesai | (lihat log di bawah) |
 | 6b | Belum | |
 | 7 | Belum | |
 | 8 | Belum | |
@@ -40,6 +40,8 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | Tinggi | Anotasi risiko oleh dua anotator terpisah | Model Risk AI asli dan angka Bab 7 (macro F1, kappa) | Ikuti `docs/risk-annotation-guide.md`: dua orang mengisi `ml/risk/annotations/anotator_A.csv` dan `anotator_B.csv` tanpa saling melihat (minimal 300 skenario), jalankan `python ml/risk/kappa.py`, bahas `ml/risk/data/disagreements.csv`, lalu `python ml/risk/train.py`. |
 | Sedang | Latih IndoBERT di GPU | Perbandingan Intent AI Bab 7 | Buka Colab/Kaggle dengan GPU, jalankan langkah di docstring `ml/intent/train_indobert.py`, unduh `ml/models/intent/indobert/` dan `indobert_report.json` ke laptop, lalu `python ml/intent/select_model.py`. Cek dan catat lisensi checkpoint di `docs/TECH_LIST.md`. |
 | Sedang | Tinjau teks persetujuan lapis 1 | Enrollment wajah dan suara | Baca `docs/consent-text/face-v1.md` dan `voice-v1.md`; jika diubah, buat versi baru (misalnya `face-v2.md`) dan naikkan `CONSENT_TEXT_FACE`. |
+| Sedang | Tunjuk peninjau dan admin | Konsol peninjau, banding, sengketa | Setelah akun mereka mendaftar: `cd backend` lalu `python -m app.cli role grant --email <email> --role REVIEWER` (atau `ADMIN`). |
+| Rendah | Aktifkan email (opsional, bukan untuk demo offline) | Notifikasi email | Isi `EMAIL_ENABLED=true`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` di `backend/.env` dengan akun SMTP tim. |
 | Sedang | Sambungkan repo ke GitHub (privat) agar CI jalan | CI, kerja paralel 4 anggota | Buat repo privat kosong di GitHub, lalu di `E:\armor`: `git remote add origin <url>` dan `git push -u origin main`. |
 
 ## Log per fase
@@ -86,3 +88,10 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 - **Ringkasan:** Risk AI menilai isi konten saja (intent, keyakinan, jenis target, media, realisme, manipulasi, konteks sensitif, suara sintetis); consent dan izin bukan fitur. Realisme, manipulasi, dan konteks sensitif diekstrak dari prompt dengan aturan kata kunci terdokumentasi dan teruji. Generator 600 skenario dan lembar anotasi dua anotator siap, beserta skrip Cohen's kappa dan penggabungan label. Training membandingkan Logistic Regression dan Random Forest dengan validasi silang dan memilih berdasarkan macro F1. Backend menghitung skor 0-100 dari probabilitas berbobot, level, dan tiga fitur paling berpengaruh; tanpa model hasil anotasi manusia dipakai tabel per intent. Realisme kini mengaktifkan aturan satire fotorealistik di policy. Gemini dihapus seluruhnya.
 - **Hasil tes:** backend 292 lulus, 1 dilewati, 0 gagal; `ml/` 20 lulus; ruff bersih.
 - **Perlu diperiksa manusia:** panduan anotasi dan kata kunci fitur. Backend memakai tabel fallback risiko sampai anotasi selesai.
+
+### Fase 6: gateway lengkap dan fitur pemilik
+
+- **Commit:** (lihat tabel status)
+- **Ringkasan:** Gateway kini lewat Media Router dan mencatat waktu tiap tahap; video dan audio ditandai tidak tersedia (gagal aman) sampai Fase 9 dan 10b. Keputusan REVIEW ditahan (HELD) dan otomatis dinilai ulang begitu pemilik menjawab consent, lalu requester mendapat notifikasi. Consent punya cakupan dan masa berlaku (sekali pakai, 1/7/30 hari, tanggal), bisa dicabut, kedaluwarsa otomatis, dan pengirim bisa diblokir; batas 3 permintaan per hari per identitas. Lingkaran tepercaya, notifikasi (email opsional), audit log berantai hash dengan verifikasi, dasbor aktivitas, dan kasus banding/sengketa lengkap dengan peran peninjau, pembekuan, pindah kepemilikan, dan hapus pendaftaran palsu. CLI untuk peran, akun platform, pembersihan log 90 hari. Unggahan divalidasi dari isi berkas dan ukurannya dibatasi.
+- **Hasil tes:** 330 lulus, 1 dilewati, 0 gagal; cakupan `app/` 94%, `app/policy` 100%; ruff bersih.
+- **Perlu diperiksa manusia:** alur peninjau dan teks notifikasi. Skema basis data berubah lagi (hapus `backend/armor.db` lokal).

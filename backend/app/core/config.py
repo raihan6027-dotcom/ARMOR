@@ -61,6 +61,25 @@ class Settings(BaseSettings):
 
     # --- Upload limits ---
     max_image_mb: float = 8.0
+    max_audio_mb: float = 15.0
+    max_audio_seconds: float = 60.0
+    max_video_mb: float = 50.0
+    max_video_seconds: float = 30.0
+
+    # --- Rate limits ---
+    consent_requests_per_day: int = 3  # per requester per identity (CLAUDE.md bagian 9)
+    gateway_requests_per_minute: int = 30  # per account (per API key from Fase 10e)
+
+    # --- Retention ---
+    log_retention_days: int = 90
+
+    # --- Email notifications (optional; off for the offline demo) ---
+    email_enabled: bool = False
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "ARMOR <no-reply@armor.local>"
 
     model_config = SettingsConfigDict(
         env_file=".env",

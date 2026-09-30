@@ -11,7 +11,7 @@ from app.schema.permission import (
     PermissionSetResponse,
     PermissionsResponse,
 )
-from app.services import identity_service, permission_service
+from app.services import audit_service, identity_service, permission_service
 
 router = APIRouter(prefix="/permissions", tags=["Permission"])
 
@@ -37,7 +37,21 @@ def set_permission(
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
-    identity_service.get_owned(db, request.identity_id, current.user_id, hide_existence=False)
+    identity = identity_service.get_owned(
+        db, request.identity_id, current.user_id, hide_existence=False
+    )
+    identity_service.require_not_frozen(identity)
+    audit_service.record(
+        db,
+        "PERMISSION_CHANGED",
+        current.user_id,
+        {
+            "identity_id": request.identity_id,
+            "intent": request.intent.value,
+            "media": request.media.value,
+            "decision": request.decision.value,
+        },
+    )
     permission_service.set_permission(
         db, request.identity_id, request.intent, request.media, request.decision
     )

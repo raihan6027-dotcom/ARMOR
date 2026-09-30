@@ -1,22 +1,26 @@
 """Synthetic camera for tests: no model, no real faces.
 
-An "image" is base64 of b"SYNTH:" + JSON describing the faces in it. Each face has
-an embedding derived from a person name (a seeded random unit vector), optionally
-blended to hit an exact cosine similarity with that person, plus geometry used by
-the real quality gate in app/ai/face.py.
+An "image" is a real (tiny) PNG whose tEXt chunk `armor-synth` holds JSON
+describing the faces in it, so it passes the upload type check. Each face has an
+embedding derived from a person name (a seeded random unit vector), optionally
+blended to hit an exact cosine similarity with that person, plus geometry used
+by the real quality gate in app/ai/face.py.
 """
 
 from __future__ import annotations
 
 import base64
+import io
 import json
 import zlib
 
 import numpy as np
+from PIL import Image
+from PIL.PngImagePlugin import PngInfo
 
 from app.ai.face import EMBEDDING_DIM, DetectedFace, l2_normalize, quality_issues
 
-PREFIX = b"SYNTH:"
+KEY = "armor-synth"
 
 
 def person_vec(name: str) -> np.ndarray:
@@ -44,20 +48,38 @@ def face(
     return {"name": name, "cos": cos, "yaw": yaw, "pitch": pitch, "size": size, "blur": blur}
 
 
+def image_bytes(*faces: dict) -> bytes:
+    info = PngInfo()
+    info.add_text(KEY, json.dumps(list(faces)))
+    buf = io.BytesIO()
+    Image.new("RGB", (8, 8), (40, 80, 120)).save(buf, format="PNG", pnginfo=info)
+    return buf.getvalue()
+
+
 def image(*faces: dict) -> str:
-    return base64.b64encode(PREFIX + json.dumps(list(faces)).encode()).decode()
+    return base64.b64encode(image_bytes(*faces)).decode()
 
 
 def enroll_images(name: str, yaws=(-15.0, 0.0, 15.0), **kw) -> list[str]:
     return [image(face(name, yaw=y, **kw)) for y in yaws]
 
 
-def analyze(image_bytes: bytes) -> list[DetectedFace]:
+def _specs(data: bytes) -> list[dict] | None:
+    try:
+        img = Image.open(io.BytesIO(data))
+        raw = img.text.get(KEY)  # type: ignore[attr-defined]
+    except Exception:  # noqa: BLE001
+        return None
+    return json.loads(raw) if raw else None
+
+
+def analyze(data: bytes) -> list[DetectedFace]:
     """Drop-in replacement for FaceAI.analyze using the synthetic encoding."""
-    if not image_bytes.startswith(PREFIX):
+    specs = _specs(data)
+    if not specs:
         return []
     out = []
-    for spec in json.loads(image_bytes[len(PREFIX) :]):
+    for spec in specs:
         name = spec["name"] or "anon"
         vec = person_vec(name) if spec["cos"] is None else vec_with_cosine(name, spec["cos"])
         size, blur, yaw, pitch = spec["size"], spec["blur"], spec["yaw"], spec["pitch"]

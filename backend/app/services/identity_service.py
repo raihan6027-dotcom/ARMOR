@@ -12,8 +12,6 @@
 
 from __future__ import annotations
 
-import base64
-import binascii
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -27,12 +25,13 @@ from app.core.config import settings
 from app.core.crypto import decrypt_embedding, encrypt_embedding
 from app.core.exceptions import ArmorError, ForbiddenError, NotFoundError
 from app.core.logging import get_logger
+from app.core.uploads import read_upload
 from app.models.biometric_consent import BiometricConsent
-from app.models.case import Case
 from app.models.consent import Consent
 from app.models.identity import Identity
 from app.models.permission import Permission
 from app.schema.common import BiometricMedia, IdentityTarget, LockLevel
+from app.services import audit_service
 
 logger = get_logger("identity_service")
 
@@ -43,23 +42,9 @@ def _utcnow() -> datetime:
     return datetime.now(UTC)
 
 
-def decode_image(image_b64: str) -> bytes:
-    if not image_b64:
-        raise ArmorError("INVALID_IMAGE", "No image provided.", 422)
-    # Tolerate data URLs: "data:image/jpeg;base64,...."
-    if "," in image_b64 and image_b64.strip().startswith("data:"):
-        image_b64 = image_b64.split(",", 1)[1]
-    try:
-        data = base64.b64decode(image_b64, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise ArmorError("INVALID_IMAGE", f"Image is not valid base64: {exc}", 422) from exc
-    if len(data) > settings.max_image_mb * 1024 * 1024:
-        raise ArmorError(
-            "FILE_TOO_LARGE",
-            f"Image is larger than {settings.max_image_mb:g} MB.",
-            413,
-        )
-    return data
+def decode_image(image_b64: str, field: str = "image") -> bytes:
+    """Base64 image, validated by size and content type (magic bytes)."""
+    return read_upload(image_b64, "image", field)
 
 
 # --- Lookups ---------------------------------------------------------------------
@@ -98,6 +83,17 @@ def require_own_identity(db: Session, user_id: str) -> Identity:
     if identity is None:
         raise NotFoundError("You have not enrolled an identity yet.")
     return identity
+
+
+def require_not_frozen(identity: Identity) -> None:
+    """A reviewer froze this identity during a false-enrollment dispute: its owner
+    controls are paused until the case is resolved (protection keeps working)."""
+    if identity.frozen:
+        raise ArmorError(
+            "IDENTITY_FROZEN",
+            "This identity is frozen while a dispute is reviewed.",
+            423,
+        )
 
 
 def lock_level(identity: Identity, media: BiometricMedia) -> LockLevel:
@@ -289,15 +285,17 @@ def enroll_face(
     ]
     match = duplicate_of(mean, others)
     if match is not None:
-        case = Case(
-            case_id=str(uuid.uuid4()),
-            kind="DISPUTE",
-            reporter_id=user_id,
-            identity_id=match.identity_id,
-            media=BiometricMedia.FACE.value,
-            note="Opened automatically: enrollment matched an existing identity.",
+        from app.services import case_service  # local import: avoids an import cycle
+
+        case = case_service.open_dispute_from_enrollment(
+            db, user_id, match.identity_id, BiometricMedia.FACE.value, None
         )
-        db.add(case)
+        audit_service.record(
+            db,
+            "ENROLL_REFUSED_DUPLICATE",
+            user_id,
+            {"case_id": case.case_id, "identity_id": match.identity_id, "media": "FACE"},
+        )
         db.commit()
         logger.info("enrollment refused: duplicate face, dispute case opened")
         raise ArmorError(
@@ -316,6 +314,12 @@ def enroll_face(
     identity.face_embedding = encrypt_embedding(mean)
     identity.face_enrolled_at = _utcnow()
     _record_consent(db, user_id, identity.identity_id, BiometricMedia.FACE, version)
+    audit_service.record(
+        db,
+        "ENROLLED",
+        user_id,
+        {"identity_id": identity.identity_id, "media": "FACE", "consent_text": version},
+    )
     db.commit()
     db.refresh(identity)
     return identity
@@ -355,12 +359,23 @@ def lock(
     """Set the Lock level of an identity the caller owns, per media (None = both).
     Unregistered ids can never be claimed."""
     identity = get_owned(db, identity_id, user_id, hide_existence=False)
+    require_not_frozen(identity)
     if media in (None, BiometricMedia.FACE):
         identity.face_lock = level.value
     if media in (None, BiometricMedia.VOICE):
         identity.voice_lock = level.value
     unlocked = (identity.face_lock, identity.voice_lock) == (LockLevel.NONE.value,) * 2
     identity.status = "active" if unlocked else "locked"
+    audit_service.record(
+        db,
+        "LOCK_CHANGED",
+        user_id,
+        {
+            "identity_id": identity_id,
+            "face_lock": identity.face_lock,
+            "voice_lock": identity.voice_lock,
+        },
+    )
     db.commit()
     db.refresh(identity)
     return identity
@@ -387,6 +402,12 @@ def revoke_media(db: Session, user_id: str, media: BiometricMedia) -> Identity:
     else:
         identity.voice_embedding = None
         identity.voice_enrolled_at = None
+    audit_service.record(
+        db,
+        "BIOMETRIC_CONSENT_REVOKED",
+        user_id,
+        {"identity_id": identity.identity_id, "media": media.value},
+    )
     db.commit()
     db.refresh(identity)
     return identity
@@ -406,5 +427,6 @@ def delete_all(db: Session, user_id: str) -> int:
         )
         for identity in identities:
             db.delete(identity)
+        audit_service.record(db, "IDENTITY_DELETED", user_id, {"identity_ids": ids})
     db.commit()
     return len(ids)
