@@ -9,7 +9,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | Awal | Selesai | `2ec74d9` |
 | 0 | Selesai | `3649ac6` |
 | 1 | Selesai | `78287e1` |
-| 2 | Selesai | (lihat log di bawah) |
+| 2 | Selesai | `2f03f1c` |
 | 3 | Belum | |
 | 4 | Belum | |
 | 5 | Belum | |
@@ -52,7 +52,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 
 ### Fase 2: model domain dan policy engine multimodal
 
-- **Commit:** (lihat tabel status)
+- **Commit:** `2f03f1c`
 - **Ringkasan:** Enum kanonik CLAUDE.md bagian 6 berlaku di seluruh backend. Policy engine ditulis ulang: menerima daftar target (sumber, jenis target, identitas, skor, Lock, consent, izin, lingkaran tepercaya, wali) beserta intent, risiko, jenis media, dan realisme; menerapkan aturan mutlak, gagal aman, dan matriks per target; lalu mengambil keputusan paling ketat. Keluarannya: keputusan, reason code, alasan bahasa Indonesia, saran prompt, pesan requester yang seragam, dan detail per target untuk pemilik dan audit. Izin disimpan per intent x media (bawaan wajah sesuai CLAUDE.md, suara bawaan DENY, empat intent berbahaya terkunci DENY). Lock diatur per media dengan tiga tingkat. Consent punya cakupan intent dan media. Gateway `/requests` dan `/decision` memakai engine baru. Selama fase ini ditemukan bahwa `backend/app/models/` tidak pernah ter-commit karena pola `.gitignore` lama; sudah diperbaiki.
 - **Hasil tes:** 185 lulus, 0 gagal. Cakupan `app/policy` 100% (baris dan cabang). Ruff bersih.
 - **Perlu diperiksa manusia:** (1) tafsiran bahwa izin ALLOW = consent tetap; (2) teks alasan dan saran prompt di `backend/app/policy/explain.py`; (3) commit `awal`, `fase-0`, dan `fase-1` tidak memuat `backend/app/models/*.py`, jadi checkout commit lama itu tidak bisa dijalankan; mulai commit Fase 2 lengkap; (4) skema basis data berubah: hapus `backend/armor.db` lokal sebelum menjalankan server (belum ada migrasi).
