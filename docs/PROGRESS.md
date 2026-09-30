@@ -8,7 +8,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | --- | --- | --- |
 | Awal | Selesai | `2ec74d9` |
 | 0 | Selesai | `3649ac6` |
-| 1 | Selesai | (lihat log di bawah) |
+| 1 | Selesai | `78287e1` |
 | 2 | Belum | |
 | 3 | Belum | |
 | 4 | Belum | |
@@ -45,7 +45,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 
 ### Fase 1: menutup celah keamanan
 
-- **Commit:** (lihat tabel status)
+- **Commit:** `78287e1`
 - **Ringkasan:** Sepuluh celah yang terbukti (ditambah 9b: mengunci identitas orang lain) kini punya tes regresi di `backend/tests/security/test_fase1_security.py` yang gagal pada kode lama dan lulus sesudahnya. Perbaikan: kepemilikan dicek pada enroll, verify, profile, lock, dan permission; consent wajib login, requester diambil dari token, hanya pemilik yang menjawab; policy menerapkan Identity Lock; riwayat dan log hanya milik sendiri; semua ID memakai UUID; respons ke requester tidak lagi membocorkan identitas target, skor, izin, atau consent, dengan pesan seragam. Server juga menolak menyala di produksi dengan rahasia bawaan atau CORS `*`. Tabel sebelum vs sesudah ada di `docs/eval/security-fase1.md`.
 - **Hasil tes:** 61 lulus, 0 gagal (46 lama, 12 keamanan, 3 config). Ruff bersih.
 - **Perlu diperiksa manusia:** tabel Bab 7.2; tiga tes lama yang disesuaikan karena mengukuhkan celah (dicatat di `docs/AI_USAGE.md`).
