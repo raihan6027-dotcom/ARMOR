@@ -23,6 +23,9 @@ logger = get_logger("main")
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     configure_logging()
+    problems = settings.insecure_settings()
+    if problems:
+        raise RuntimeError("Refusing to start in production: " + "; ".join(problems))
     init_db()
     logger.info("ARMOR backend started (db=%s)", settings.database_url.split("@")[-1])
     yield

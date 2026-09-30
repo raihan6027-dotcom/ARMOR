@@ -9,7 +9,7 @@ from app.schema.permission import (
     PermissionSetResponse,
     PermissionsResponse,
 )
-from app.services import permission_service
+from app.services import identity_service, permission_service
 
 router = APIRouter(prefix="/permissions", tags=["Permission"])
 
@@ -20,6 +20,7 @@ def get_permissions(
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
+    identity_service.get_owned(db, identity_id, current.user_id, hide_existence=False)
     perms = permission_service.get_permissions(db, identity_id)
     return PermissionsResponse(identity_id=identity_id, permissions=perms)
 
@@ -30,6 +31,7 @@ def set_permission(
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
+    identity_service.get_owned(db, request.identity_id, current.user_id, hide_existence=False)
     permission_service.set_permission(db, request.identity_id, request.action, request.decision)
     return PermissionSetResponse(
         identity_id=request.identity_id,

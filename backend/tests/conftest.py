@@ -47,3 +47,15 @@ def auth(client):
     body = resp.json()
     headers = {"Authorization": f"Bearer {body['access_token']}"}
     return headers, body["user_id"]
+
+
+@pytest.fixture()
+def make_user(client):
+    """Factory: register + log in a user by email; returns (headers, user_id)."""
+
+    def _make(email: str, password: str = "secret123"):
+        client.post("/auth/register", json={"email": email, "password": password})
+        body = client.post("/auth/login", json={"email": email, "password": password}).json()
+        return {"Authorization": f"Bearer {body['access_token']}"}, body["user_id"]
+
+    return _make

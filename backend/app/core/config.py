@@ -1,5 +1,11 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_DEV_JWT_SECRETS = {
+    "change-me-in-production",
+    "change-me-to-a-long-random-string",
+    "ganti-dengan-hasil-gen-secrets",
+}
+
 
 class Settings(BaseSettings):
     # --- App ---
@@ -53,6 +59,16 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    def insecure_settings(self) -> list[str]:
+        """Settings that are acceptable in dev but must never reach production."""
+        problems = []
+        if self.app_env.lower() == "production":
+            if self.jwt_secret in _DEV_JWT_SECRETS or len(self.jwt_secret) < 32:
+                problems.append("JWT_SECRET is a default or shorter than 32 characters")
+            if self.cors_origins.strip() == "*":
+                problems.append("CORS_ORIGINS must list the frontend origin, not '*'")
+        return problems
 
     @property
     def cors_origin_list(self) -> list[str]:

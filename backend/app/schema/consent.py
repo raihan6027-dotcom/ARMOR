@@ -8,7 +8,6 @@ from app.schema.common import ConsentStatus
 class ConsentRequest(BaseModel):
     identity_id: str
     request_id: Optional[str] = None
-    requester_id: Optional[str] = None
     intent: Optional[str] = None
 
 

@@ -1,3 +1,21 @@
+import base64
+
+import pytest
+
+from app.ai.identity_client import identity_ai_client
+
+
+@pytest.fixture(autouse=True)
+def _owned_identity(client, auth, monkeypatch):
+    # Fase 1: permissions are owner-only, so the caller first owns ARMOR-001.
+    monkeypatch.setattr(identity_ai_client, "embed", lambda _b: None)
+    headers, _ = auth
+    img = base64.b64encode(b"fake").decode()
+    client.post(
+        "/identity/enroll", json={"identity_id": "ARMOR-001", "image": img}, headers=headers
+    )
+
+
 def test_default_permissions(client, auth):
     headers, _ = auth
     r = client.get("/permissions", params={"identity_id": "ARMOR-001"}, headers=headers)

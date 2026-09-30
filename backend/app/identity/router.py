@@ -46,6 +46,9 @@ def verify_identity(
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
+    # Only your own identity: otherwise this endpoint is an oracle for "is this
+    # face registered as X?" against anyone's identity.
+    identity_service.get_owned(db, request.identity_id, current.user_id, hide_existence=True)
     image_bytes = identity_service.decode_image(request.image)
     result = identity_service.verify(db, request.identity_id, image_bytes)
     return IdentityVerifyResponse(
@@ -64,7 +67,7 @@ def get_identity_profile(
     current: User = Depends(get_current_user),
 ):
     if identity_id:
-        identity = identity_service.get_profile(db, identity_id)
+        identity = identity_service.get_profile(db, identity_id, current.user_id)
     else:
         identity = db.query(Identity).filter(Identity.user_id == current.user_id).first()
         if identity is None:
@@ -83,7 +86,7 @@ def lock_identity(
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
-    identity = identity_service.lock(db, request.identity_id)
+    identity = identity_service.lock(db, request.identity_id, current.user_id)
     return IdentityLockResponse(
         identity_id=identity.identity_id,
         status=identity.status,

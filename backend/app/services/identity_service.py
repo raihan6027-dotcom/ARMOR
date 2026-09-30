@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from app.ai.identity_client import identity_ai_client
 from app.ai.registry import face_registry
 from app.core.config import settings
-from app.core.exceptions import ArmorError, NotFoundError
+from app.core.exceptions import ArmorError, ForbiddenError, NotFoundError
 from app.core.logging import get_logger
 from app.models.identity import Identity
 from app.schema.common import IdentityTarget
@@ -46,6 +46,27 @@ def _cosine(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b) / (na * nb))
 
 
+def _find(db: Session, identity_id: str) -> Optional[Identity]:
+    return db.query(Identity).filter(Identity.identity_id == identity_id).first()
+
+
+def get_owned(db: Session, identity_id: str, user_id: str, *, hide_existence: bool) -> Identity:
+    """Return an identity only if `user_id` owns it.
+
+    hide_existence=True (read endpoints) answers 404 for both "missing" and "not
+    yours" so the endpoint cannot be used to probe which identities exist.
+    hide_existence=False (mutations) answers 404 for missing and 403 for not yours.
+    """
+    identity = _find(db, identity_id)
+    if identity is None:
+        raise NotFoundError(f"Identity '{identity_id}' not found.")
+    if identity.user_id != user_id:
+        if hide_existence:
+            raise NotFoundError(f"Identity '{identity_id}' not found.")
+        raise ForbiddenError("Only the identity owner may do this.")
+    return identity
+
+
 def enroll(
     db: Session,
     identity_id: str,
@@ -53,17 +74,23 @@ def enroll(
     display_name: Optional[str] = None,
     user_id: Optional[str] = None,
 ) -> tuple[Identity, bool]:
-    """Create/update an identity. Returns (identity, ai_available)."""
+    """Create/update an identity. Returns (identity, ai_available).
+
+    An identity that already belongs to another account can never be re-enrolled
+    (that used to hand its ownership, and SELF decisions, to the caller).
+    """
+    identity = _find(db, identity_id)
+    if identity is not None and identity.user_id != user_id:
+        raise ForbiddenError("This identity is registered to another account.")
+
     embedding = identity_ai_client.embed(image_bytes)
     ai_available = embedding is not None
 
-    identity = db.query(Identity).filter(Identity.identity_id == identity_id).first()
     if identity is None:
         identity = Identity(identity_id=identity_id, status="active")
         db.add(identity)
 
-    if user_id:
-        identity.user_id = user_id
+    identity.user_id = user_id
     if display_name:
         identity.display_name = display_name
     if embedding is not None:
@@ -154,24 +181,18 @@ def determine_target(
         "match_score": score,
         "ai_available": ai_available,
         "known": identity is not None,
+        "locked": bool(identity is not None and identity.status == "locked"),
     }
 
 
-def get_profile(db: Session, identity_id: str) -> Identity:
-    identity = db.query(Identity).filter(Identity.identity_id == identity_id).first()
-    if identity is None:
-        raise NotFoundError(f"Identity '{identity_id}' not found.")
-    return identity
+def get_profile(db: Session, identity_id: str, user_id: str) -> Identity:
+    return get_owned(db, identity_id, user_id, hide_existence=True)
 
 
-def lock(db: Session, identity_id: str) -> Identity:
-    identity = db.query(Identity).filter(Identity.identity_id == identity_id).first()
-    if identity is None:
-        # Locking a not-yet-enrolled identity still records the protected status.
-        identity = Identity(identity_id=identity_id, status="locked")
-        db.add(identity)
-    else:
-        identity.status = "locked"
+def lock(db: Session, identity_id: str, user_id: str) -> Identity:
+    """Lock an identity the caller owns. Unregistered ids can no longer be claimed."""
+    identity = get_owned(db, identity_id, user_id, hide_existence=False)
+    identity.status = "locked"
     db.commit()
     db.refresh(identity)
     return identity

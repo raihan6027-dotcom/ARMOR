@@ -16,5 +16,7 @@ def get_logs(
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
-    """Decision audit log across all requests (most recent first)."""
-    return RequestHistoryResponse(**decision_service.history(db, limit=limit))
+    """The caller's own decision log (most recent first)."""
+    return RequestHistoryResponse(
+        **decision_service.history(db, requester_user_id=current.user_id, limit=limit)
+    )

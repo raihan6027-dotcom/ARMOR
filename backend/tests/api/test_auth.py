@@ -1,7 +1,10 @@
+import uuid
+
+
 def test_register_and_login_flow(client):
     r = client.post("/auth/register", json={"email": "a@b.com", "password": "pass123"})
     assert r.status_code == 201
-    assert r.json()["user_id"].startswith("USER-")
+    uuid.UUID(r.json()["user_id"])  # Fase 1: UUID, not a row count
 
     r = client.post("/auth/login", json={"email": "a@b.com", "password": "pass123"})
     assert r.status_code == 200

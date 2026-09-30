@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -17,8 +19,9 @@ from app.schema.auth import (
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-def _next_user_id(db: Session) -> str:
-    return f"USER-{db.query(User).count() + 1:03d}"
+def _new_user_id() -> str:
+    # UUIDs: row-count ids collided under concurrency and after deletions.
+    return str(uuid.uuid4())
 
 
 @router.post("/register", response_model=RegisterResponse, status_code=201)
@@ -27,7 +30,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     if existing:
         raise ArmorError("EMAIL_TAKEN", "An account with this email already exists.", 409)
     user = User(
-        user_id=_next_user_id(db),
+        user_id=_new_user_id(),
         email=payload.email,
         password_hash=hash_password(payload.password),
     )

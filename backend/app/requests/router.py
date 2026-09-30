@@ -36,11 +36,8 @@ def create_request(
 @router.get("", response_model=RequestHistoryResponse)
 def list_requests(
     limit: int = Query(50, ge=1, le=200),
-    mine: bool = Query(False, description="Only return the current user's requests"),
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
-    result = decision_service.history(
-        db, requester_user_id=current.user_id if mine else None, limit=limit
-    )
+    result = decision_service.history(db, requester_user_id=current.user_id, limit=limit)
     return RequestHistoryResponse(**result)

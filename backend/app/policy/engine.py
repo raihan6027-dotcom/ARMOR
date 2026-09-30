@@ -32,6 +32,7 @@ def evaluate_policy(
     identity_target: str = "OTHER",
     identity_verified: bool = False,
     intent: Optional[str] = None,
+    identity_locked: bool = False,
 ) -> tuple[str, str, str]:
     """Return (decision, reason_code, human_reason). Inputs may be any casing."""
     risk = normalize_risk(risk_level)
@@ -42,6 +43,15 @@ def evaluate_policy(
         target = IdentityTarget(str(identity_target).upper())
     except ValueError:
         target = IdentityTarget.UNKNOWN
+
+    # 0. Identity Lock: the owner has locked this identity, so any use by someone
+    #    else is refused regardless of intent, risk, consent, or permission.
+    if identity_locked and target != IdentityTarget.SELF:
+        return (
+            Decision.DENY.value,
+            "IDENTITY_LOCKED",
+            "The identity owner has locked this identity against use by others.",
+        )
 
     # 1. Safe fallback: risk could not be determined (e.g. AI unavailable).
     if risk is None:
