@@ -16,7 +16,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | 6 | Selesai | `8233412` |
 | 6b | Selesai | `4e67ec2` |
 | 7 | Selesai | `8a805e5` |
-| 8 | Selesai | (lihat log di bawah) |
+| 8 | Selesai | `12a2151` |
 | 9 | Belum | |
 | 10a | Belum | |
 | 10b | Belum | |
@@ -120,7 +120,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 
 ### Fase 8: generator tiruan, Output Guard, ARMOR Shield
 
-- **Commit:** (lihat tabel status). Sebagian pekerjaan ini sudah masuk lebih dulu lewat commit `c44a5cd` ("initial commit") dari akun tim.
+- **Commit:** `12a2151`. Sebagian pekerjaan ini sudah masuk lebih dulu lewat commit `c44a5cd` ("initial commit") dari akun tim.
 - **Ringkasan:** Jalur setelah ALLOW kini lengkap. `generator_mock/` mensimulasikan AI generatif (ditandai SIMULASI) dan punya mode uji yang menempelkan wajah ke hasil. Backend memilih generator lewat `GeneratorAdapter` (mock bawaan, Stable Diffusion lokal opsional). `POST /requests/{id}/generate` hanya melayani keputusan ALLOW final dengan media yang sama persis dengan yang diperiksa. Output Guard memeriksa ulang hasil dengan Face AI; wajah terdaftar yang tidak diizinkan, wajah tidak jelas, atau Face AI yang tidak tersedia membuat hasil ditahan, dicatat, dan pemiliknya diberi tahu. ARMOR Shield memberi label terlihat, manifest bergaya C2PA bertanda tangan di metadata PNG, serta hash dan perceptual hash di registri. `POST /shield/verify` dan halaman `/verifikasi/` bisa dipakai siapa saja tanpa login. Tombol "Buat hasil" ada di layar Periksa. Skrip evaluasi Output Guard siap, menunggu data relawan.
 - **Hasil tes:** backend 357 lulus, 1 dilewati (termasuk skenario 15 dan 16); `generator_mock` 15 lulus; `ml/` 28 lulus; ruff bersih; `tsc` dan ESLint bersih; Playwright 4 lulus.
 - **Catatan:** PNG di tes Playwright Fase 7 ternyata rusak (langkah periksa berjalan tanpa wajah); sudah diganti dan tes memastikan wajah terdeteksi. Skema basis data berubah (tabel `shield_records`, kolom baru di `requests`): hapus `backend/armor.db` lokal. Remote `origin` berisi 3 commit yang menghapus `CLAUDE.md`, `docs/PROMPTS.md`, dan `.claude/`; belum digabung dan belum di-push, menunggu keputusan tim.
