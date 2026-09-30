@@ -3,4 +3,6 @@ insightface==2.0
 onnxruntime==1.23.2
 opencv-python-headless==5.0.0.93
 pandas==2.3.3
-scikit-learn==1.7.2
+# Opsional: IndoBERT (Intent AI pembanding) di laptop dengan torch
+# transformers>=4.44
+# torch>=2.3

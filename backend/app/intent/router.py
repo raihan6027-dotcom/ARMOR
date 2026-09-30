@@ -13,6 +13,7 @@ def _analyze(request: IntentRequest) -> IntentResponse:
         intent=result["intent"],
         confidence=result["confidence"],
         ai_available=result["available"],
+        model_version=result["model_version"],
     )
 
 

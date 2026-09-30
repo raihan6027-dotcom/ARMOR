@@ -30,11 +30,12 @@ Setiap dependensi baru wajib dicatat di sini beserta lisensi dan kegunaannya (CL
 | OpenCV (headless) | Apache-2.0 | Pra-proses gambar, ambil frame video | Dipakai |
 | pandas | BSD-3 | Olah data evaluasi | Rencana Fase 4-5 |
 | matplotlib | Lisensi matplotlib (berbasis PSF, BSD-compatible) | Kurva ROC dan grafik evaluasi di `ml/` | Dipakai (Fase 3, `ml/face_eval`) |
-| scikit-learn | BSD-3 | Intent AI (TF-IDF + LR), Risk AI (LR + RF) | Rencana Fase 4-5 |
+| scikit-learn 1.7.2 | BSD-3 | Intent AI (TF-IDF kata + karakter + Logistic Regression), Risk AI (LR + RF) | Dipakai (Intent Fase 4, `backend/app/ai/intent.py`, `ml/intent/`) |
+| joblib | BSD-3 | Menyimpan dan memuat model scikit-learn lokal | Dipakai (Fase 4) |
 | SpeechBrain `spkrec-ecapa-voxceleb` | Apache-2.0 | Embedding suara | Rencana Fase 10b |
 | Whisper (small/base) | MIT | Transkrip suara offline | Rencana Fase 10b |
 | Model anti-spoof (AASIST atau setara) | Cek sebelum dipakai | Deteksi rekaman ulang dan suara sintetis | Rencana Fase 10b |
-| IndoBERT (checkpoint IndoNLU) | Cek lisensi checkpoint | Pembanding Intent AI | Rencana Fase 4 |
+| IndoBERT `indobenchmark/indobert-base-p1` (IndoNLU) + Hugging Face transformers (Apache-2.0) + PyTorch (BSD-3) | Cek lisensi checkpoint sebelum pengumpulan | Pembanding Intent AI (`ml/intent/train_indobert.py`, GPU) | Skrip siap, belum dijalankan (butuh GPU) |
 | rapidfuzz | MIT | Pencocokan nama/alias | Rencana Fase 10a |
 | spaCy | MIT | NER sederhana | Rencana Fase 10a (atau regex) |
 | imagehash | BSD-2 | Perceptual hash ARMOR Shield | Rencana Fase 8 |

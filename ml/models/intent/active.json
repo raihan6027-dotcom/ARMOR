@@ -1,0 +1,19 @@
+{
+  "kind": "sklearn",
+  "file": "intent_tfidf_lr.joblib",
+  "model_version": "intent-tfidf-lr-20260930-6b50589b",
+  "threshold": 0.2,
+  "labels": [
+    "PERSONAL_CREATION",
+    "PERSONAL_EDITING",
+    "SATIRE_PARODY",
+    "COMMERCIAL_USE",
+    "POLITICAL_USE",
+    "IMPERSONATION",
+    "DEFAMATION",
+    "SEXUAL_EXPLICIT",
+    "DECEPTIVE",
+    "UNCERTAIN"
+  ],
+  "experiment": true
+}

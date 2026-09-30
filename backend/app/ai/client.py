@@ -1,9 +1,8 @@
 """Facade over the AI backends used by the intent/risk endpoints.
 
-Preserves the original AIClient.analyze_intent / analyze_risk contract, but now
-delegates to Gemini and normalizes the output. When Gemini is unavailable the
-methods fall back to a *conservative* deterministic heuristic (never auto-low
-risk, never a positive-but-unverified claim) so the system fails safe.
+Intent comes from the local Intent AI (app/ai/intent.py). Risk still uses the
+legacy text-only path until Fase 5 replaces it with the local Risk AI; without a
+Gemini key (the default) it uses a conservative per-intent table.
 """
 
 from __future__ import annotations
@@ -11,6 +10,7 @@ from __future__ import annotations
 from typing import Optional
 
 from app.ai.gemini_client import gemini_client
+from app.ai.intent import intent_ai
 from app.schema.common import (
     Intent,
     RiskLevel,
@@ -49,28 +49,8 @@ class AIClient:
 
     # -- Intent -------------------------------------------------------------
     def analyze_intent(self, prompt: str) -> dict:
-        data = self.gemini.analyze(prompt)
-        if data.get("available"):
-            raw = data.get("intent_category") or data.get("intent")
-            intent = normalize_intent(raw)
-            try:
-                confidence = float(data.get("confidence", 0.7))
-            except (TypeError, ValueError):
-                confidence = 0.7
-            return {
-                "intent": intent.value,
-                "confidence": max(0.0, min(1.0, confidence)),
-                "raw_intent": data.get("intent"),
-                "available": True,
-            }
-        # Fallback: classify from the prompt text alone.
-        intent = normalize_intent(prompt)
-        return {
-            "intent": intent.value,
-            "confidence": 0.4 if intent is not Intent.UNCERTAIN else 0.2,
-            "raw_intent": None,
-            "available": False,
-        }
+        """Local Intent AI (Fase 4). No third-party AI is called for intent."""
+        return intent_ai.classify(prompt)
 
     # -- Risk ---------------------------------------------------------------
     def analyze_risk(
@@ -96,6 +76,7 @@ class AIClient:
                         "risk_level": level.value,
                         "risk_score": score,
                         "available": True,
+                        "model_version": "risk-gemini-legacy",
                     }
         # Deterministic conservative fallback.
         level = self._fallback_level(intent)
@@ -103,6 +84,7 @@ class AIClient:
             "risk_level": level.value,
             "risk_score": _LEVEL_SCORE[level],
             "available": False,
+            "model_version": "risk-fallback-table-v1",
         }
 
     @staticmethod

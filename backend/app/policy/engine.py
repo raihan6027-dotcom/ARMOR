@@ -38,6 +38,9 @@ from app.schema.common import (
     TargetSource,
 )
 
+# Bump when a rule or matrix cell changes; recorded in every decision log.
+POLICY_VERSION = "policy-2026.09-fase4"
+
 # Satire at or above this realism (0..1, from Risk AI features) is treated as
 # DEFAMATION (visual) or DECEPTIVE (audio).
 REALISM_THRESHOLD = 0.6

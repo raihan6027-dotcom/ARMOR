@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -9,3 +11,4 @@ class IntentResponse(BaseModel):
     intent: str
     confidence: float
     ai_available: bool = True
+    model_version: Optional[str] = None

@@ -30,9 +30,13 @@ out/
 *.joblib
 ml/models/**/*.bin
 ml/models/**/*
+!ml/models/**/
 !ml/models/README.md
 !ml/models/**/*.json
 !ml/models/**/*.md
+# ...except bundled transformer weights and tokenizer configs
+ml/models/**/indobert/**
+ml/models/models/**
 
 # --- Media dan dataset wajah/suara relawan: TIDAK PERNAH di-commit ---
 ml/face_eval/data/

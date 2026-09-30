@@ -40,5 +40,8 @@ class Request(Base):
     # JSON list of per-target results: for the identity owner and audit only.
     per_target_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # JSON {component: version} of every model that informed this decision.
+    model_version: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     processing_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, index=True)

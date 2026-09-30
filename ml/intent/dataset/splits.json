@@ -1,0 +1,9 @@
+{
+  "seed": 20260930,
+  "counts": {
+    "train": 2450,
+    "val": 520,
+    "test": 530
+  },
+  "test_sha256": "8bf87a07f2dd697c34a3d8d9b1525fe8e0c6ded61f0ac5733765f719264e5054"
+}

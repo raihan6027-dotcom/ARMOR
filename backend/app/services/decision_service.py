@@ -24,11 +24,12 @@ from sqlalchemy.orm import Session
 
 from app.ai.client import AIClient
 from app.ai.face import face_ai
+from app.core.config import settings
 from app.core.logging import get_logger
 from app.models.request import Request
 from app.models.request_target import RequestTarget
 from app.policy.defaults import permission_media
-from app.policy.engine import PolicyInput, TargetInput, evaluate
+from app.policy.engine import POLICY_VERSION, PolicyInput, TargetInput, evaluate
 from app.schema.common import (
     IdentityTarget,
     Intent,
@@ -145,6 +146,13 @@ def orchestrate(
         )
     )
     elapsed_ms = int((time.perf_counter() - started) * 1000)
+    versions = {
+        "intent": intent_res.get("model_version"),
+        "risk": risk_res.get("model_version"),
+        "policy": POLICY_VERSION,
+    }
+    if image_bytes:
+        versions["face"] = f"insightface-{settings.insightface_model}"
 
     # 5. Persist the full decision (owner + audit view). No media is stored.
     request_id = _new_request_id()
@@ -165,6 +173,7 @@ def orchestrate(
             requester_code=result.requester_code,
             requester_message=result.requester_message,
             per_target_detail=json.dumps([d.as_dict() for d in result.per_target_detail]),
+            model_version=json.dumps(versions, sort_keys=True),
             processing_ms=elapsed_ms,
         )
     )

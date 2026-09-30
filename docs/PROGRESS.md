@@ -11,7 +11,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | 1 | Selesai | `78287e1` |
 | 2 | Selesai | `2f03f1c` |
 | 3 | Selesai | `6c1cef7` |
-| 4 | Belum | |
+| 4 | Selesai | (lihat log di bawah) |
 | 5 | Belum | |
 | 6 | Belum | |
 | 6b | Belum | |
@@ -35,6 +35,9 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | Tinggi | Kumpulkan foto wajah relawan dan percobaan serangan enrollment | Angka Face AI Bab 7 (TAR/FAR/EER, ambang, serangan) | Ikuti `ml/face_eval/README.md`: minimal 20 relawan (3 foto enrollment + 8 sampai 10 foto probe), 10 percobaan untuk tiap serangan (layar, cetak, sudah terdaftar). Simpan di `ml/face_eval/data/` (tidak di-commit), lalu jalankan `embed.py`, `evaluate.py`, `attacks.py`. |
 | Tinggi | Unduh model InsightFace `buffalo_l` ke laptop demo | Face AI asli, demo offline | Ikuti `ml/models/README.md` (butuh internet sekali, dan Microsoft C++ Build Tools untuk memasang insightface di Windows). |
 | Tinggi | Ganti ambang placeholder wajah dengan hasil evaluasi | Keputusan wajah yang terukur | Salin `FACE_MATCH_THRESHOLD` dan `FACE_GRAY_MARGIN` dari `docs/eval/face.md` ke `backend/.env`. |
+| Tinggi | Periksa dataset Intent AI (3.500 prompt + 90 parafrase) | Angka Intent AI Bab 7 yang sah (saat ini EKSPERIMEN) | Ikuti `docs/intent-labeling-guide.md`: buka `ml/intent/dataset/intent_dataset.csv` dan `paraphrase.csv`, periksa label, perbaiki kalimat janggal, isi `diperiksa_oleh`. Lalu `python ml/intent/dataset/generate.py --check`, `python ml/intent/train_baseline.py`, `python ml/intent/select_model.py`. |
+| Tinggi | Tambah prompt alami tulisan tim, terutama eufemisme kelas berbahaya | Tingkat lolos parafrase (saat ini 18,4%) | Tambahkan baris `sumber=manual`, `split=train`/`val`, id `MAN-xxxxx` ke `intent_dataset.csv` (lihat `ml/intent/README.md`). Jangan menyalin dari `paraphrase.csv` dan jangan menambah `split=test`. |
+| Sedang | Latih IndoBERT di GPU | Perbandingan Intent AI Bab 7 | Buka Colab/Kaggle dengan GPU, jalankan langkah di docstring `ml/intent/train_indobert.py`, unduh `ml/models/intent/indobert/` dan `indobert_report.json` ke laptop, lalu `python ml/intent/select_model.py`. Cek dan catat lisensi checkpoint di `docs/TECH_LIST.md`. |
 | Sedang | Tinjau teks persetujuan lapis 1 | Enrollment wajah dan suara | Baca `docs/consent-text/face-v1.md` dan `voice-v1.md`; jika diubah, buat versi baru (misalnya `face-v2.md`) dan naikkan `CONSENT_TEXT_FACE`. |
 | Sedang | Sambungkan repo ke GitHub (privat) agar CI jalan | CI, kerja paralel 4 anggota | Buat repo privat kosong di GitHub, lalu di `E:\armor`: `git remote add origin <url>` dan `git push -u origin main`. |
 
@@ -67,3 +70,11 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 - **Ringkasan:** Galeri wajah tokoh dan klien identifikasi lama dihapus; Gemini tidak lagi menerima gambar atau ditanya soal identitas. Face AI baru mendeteksi semua wajah dengan satu pipeline InsightFace untuk enrollment dan inferensi, lengkap dengan cek kualitas (ukuran, blur, pose). Enrollment memakai 3 tangkapan dengan sudut berbeda dan persetujuan lapis 1 yang tercatat beserta versi teksnya; menolak kualitas buruk, orang berbeda, sudut yang tidak berubah (foto layar/cetak), dan wajah yang sudah terdaftar (membuka kasus sengketa). Embedding rata-rata disimpan terenkripsi Fernet; foto tidak disimpan. Gateway mencocokkan setiap wajah ke seluruh enrollment dan menghasilkan SELF, OTHER_REGISTERED, OTHER_UNREGISTERED, atau UNCLEAR (zona abu-abu); klien tidak bisa lagi menyebut target, sehingga consent kini diajukan per `request_id` dan pemilik punya kotak consent dasar. Pemilik bisa mencabut persetujuan per media, menghapus identitas, dan mengunduh datanya. Skrip evaluasi `ml/face_eval` (TAR pada FAR 1% dan 0,1%, EER, ROC, rekomendasi ambang, uji serangan enrollment) siap dan sudah diuji jalan dengan data SINTETIS.
 - **Hasil tes:** 248 lulus, 1 dilewati (tes model asli, InsightFace belum terpasang), 0 gagal. Tes `ml/face_eval`: 8 lulus. Ruff bersih.
 - **Perlu diperiksa manusia:** teks persetujuan lapis 1; kebijakan bahwa skor di zona abu-abu saat enrollment dianggap duplikat (dikirim ke sengketa); estimasi yaw/pitch dari 5 landmark bersifat kasar dan perlu dicek dengan foto nyata; skema basis data berubah lagi (hapus `backend/armor.db` lokal).
+
+### Fase 4: Intent AI
+
+- **Commit:** (lihat tabel status)
+- **Ringkasan:** Dataset Intent AI dibuat dari template untuk 10 kelas, dua bahasa, dan tiga media (3.500 prompt, split beku 2.450/520/530 dengan hash set uji), ditambah 90 parafrase/eufemisme tulisan tangan sebagai set ketahanan. Panduan pelabelan ditulis, dan training final ditolak selama masih ada baris yang belum diperiksa. Baseline TF-IDF + LR dilatih sebagai eksperimen; ambang UNCERTAIN dipilih dari data validasi; laporan per kelas, recall kelas berbahaya, confusion matrix, dan hasil parafrase ada di `docs/eval/intent.md`. Skrip IndoBERT siap untuk GPU. Backend memuat model aktif (`ml/models/intent/active.json`) dengan fallback keyword, Gemini tidak lagi dipakai untuk intent, dan setiap log keputusan mencatat versi model.
+- **Hasil tes:** backend 254 lulus, 1 dilewati, 0 gagal; `ml/` 15 lulus; ruff bersih.
+- **Hasil eksperimen (bukan final):** set uji template macro F1 1,000 (menghafal template, tidak bermakna); set parafrase macro F1 0,485, recall berbahaya 0,358, tingkat lolos 0,184.
+- **Perlu diperiksa manusia:** pemeriksaan dataset; kualitas kalimat template bahasa Inggris; keputusan bahwa pemilihan model memprioritaskan tingkat lolos di set parafrase. File model `.joblib` tidak di-commit: jalankan `python ml/intent/train_baseline.py --allow-unreviewed` (atau tanpa flag setelah diperiksa) di laptop demo agar backend memakai model, bukan fallback.
