@@ -10,7 +10,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | 0 | Selesai | `3649ac6` |
 | 1 | Selesai | `78287e1` |
 | 2 | Selesai | `2f03f1c` |
-| 3 | Selesai | (lihat log di bawah) |
+| 3 | Selesai | `6c1cef7` |
 | 4 | Belum | |
 | 5 | Belum | |
 | 6 | Belum | |
@@ -63,7 +63,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 
 ### Fase 3: Face AI opt-in
 
-- **Commit:** (lihat tabel status)
+- **Commit:** `6c1cef7`
 - **Ringkasan:** Galeri wajah tokoh dan klien identifikasi lama dihapus; Gemini tidak lagi menerima gambar atau ditanya soal identitas. Face AI baru mendeteksi semua wajah dengan satu pipeline InsightFace untuk enrollment dan inferensi, lengkap dengan cek kualitas (ukuran, blur, pose). Enrollment memakai 3 tangkapan dengan sudut berbeda dan persetujuan lapis 1 yang tercatat beserta versi teksnya; menolak kualitas buruk, orang berbeda, sudut yang tidak berubah (foto layar/cetak), dan wajah yang sudah terdaftar (membuka kasus sengketa). Embedding rata-rata disimpan terenkripsi Fernet; foto tidak disimpan. Gateway mencocokkan setiap wajah ke seluruh enrollment dan menghasilkan SELF, OTHER_REGISTERED, OTHER_UNREGISTERED, atau UNCLEAR (zona abu-abu); klien tidak bisa lagi menyebut target, sehingga consent kini diajukan per `request_id` dan pemilik punya kotak consent dasar. Pemilik bisa mencabut persetujuan per media, menghapus identitas, dan mengunduh datanya. Skrip evaluasi `ml/face_eval` (TAR pada FAR 1% dan 0,1%, EER, ROC, rekomendasi ambang, uji serangan enrollment) siap dan sudah diuji jalan dengan data SINTETIS.
 - **Hasil tes:** 248 lulus, 1 dilewati (tes model asli, InsightFace belum terpasang), 0 gagal. Tes `ml/face_eval`: 8 lulus. Ruff bersih.
 - **Perlu diperiksa manusia:** teks persetujuan lapis 1; kebijakan bahwa skor di zona abu-abu saat enrollment dianggap duplikat (dikirim ke sengketa); estimasi yaw/pitch dari 5 landmark bersifat kasar dan perlu dicek dengan foto nyata; skema basis data berubah lagi (hapus `backend/armor.db` lokal).
