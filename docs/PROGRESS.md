@@ -12,7 +12,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | 2 | Selesai | `2f03f1c` |
 | 3 | Selesai | `6c1cef7` |
 | 4 | Selesai | `f8b16bb` |
-| 5 | Selesai | (lihat log di bawah) |
+| 5 | Selesai | `94052da` |
 | 6 | Belum | |
 | 6b | Belum | |
 | 7 | Belum | |
@@ -82,7 +82,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 
 ### Fase 5: Risk AI
 
-- **Commit:** (lihat tabel status)
+- **Commit:** `94052da`
 - **Ringkasan:** Risk AI menilai isi konten saja (intent, keyakinan, jenis target, media, realisme, manipulasi, konteks sensitif, suara sintetis); consent dan izin bukan fitur. Realisme, manipulasi, dan konteks sensitif diekstrak dari prompt dengan aturan kata kunci terdokumentasi dan teruji. Generator 600 skenario dan lembar anotasi dua anotator siap, beserta skrip Cohen's kappa dan penggabungan label. Training membandingkan Logistic Regression dan Random Forest dengan validasi silang dan memilih berdasarkan macro F1. Backend menghitung skor 0-100 dari probabilitas berbobot, level, dan tiga fitur paling berpengaruh; tanpa model hasil anotasi manusia dipakai tabel per intent. Realisme kini mengaktifkan aturan satire fotorealistik di policy. Gemini dihapus seluruhnya.
 - **Hasil tes:** backend 292 lulus, 1 dilewati, 0 gagal; `ml/` 20 lulus; ruff bersih.
 - **Perlu diperiksa manusia:** panduan anotasi dan kata kunci fitur. Backend memakai tabel fallback risiko sampai anotasi selesai.
