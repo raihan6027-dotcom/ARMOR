@@ -14,7 +14,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | 4 | Selesai | `f8b16bb` |
 | 5 | Selesai | `94052da` |
 | 6 | Selesai | `8233412` |
-| 6b | Selesai | (lihat log di bawah) |
+| 6b | Selesai | `4e67ec2` |
 | 7 | Belum | |
 | 8 | Belum | |
 | 9 | Belum | |
@@ -98,7 +98,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 
 ### Fase 6b: loop pembelajaran
 
-- **Commit:** (lihat tabel status)
+- **Commit:** `4e67ec2`
 - **Ringkasan:** Requester bisa mengizinkan prompt-nya dipakai untuk perbaikan model (bawaan mati; klausul di `docs/TERMS.md`). Hasil manusia (REVIEW yang selesai, jawaban consent, banding dan koreksi label peninjau) menjadi label di tabel `feedback`, tanpa media. Tim mengekspor dan memeriksa feedback, lalu `ml/retrain.py` melatih ulang Intent AI atau Risk AI dan hanya memakai model baru jika macro F1 dan recall kelas berbahaya di set uji beku tidak turun. Setiap percobaan tercatat di `versions.json` dan `docs/eval/retrain.md`; versi yang pernah dipakai bisa dikembalikan. `model_version` sudah tercatat di setiap log keputusan sejak Fase 4.
 - **Hasil tes:** backend 335 lulus, 1 dilewati; `ml/` 25 lulus (termasuk tes model lebih buruk ditolak); ruff bersih.
 - **Perlu diperiksa manusia:** klausul ketentuan layanan. Retrain nyata menunggu feedback dari pemakaian aplikasi.
