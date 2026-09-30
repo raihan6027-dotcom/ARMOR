@@ -102,3 +102,13 @@ export const LOCK_TEXT: Record<LockLevel, string> = {
   COMMERCIAL_POLITICAL: "Kunci komersial dan politik",
   ALL: "Kunci semua",
 };
+
+export const STATE_CHIP: Record<ConsentItem["state"], { status: "ALLOW" | "REVIEW" | "DENY" | "NEUTRAL"; text: string }> = {
+  PENDING: { status: "REVIEW", text: "Menunggu" },
+  GRANTED: { status: "ALLOW", text: "Disetujui" },
+  DENIED: { status: "DENY", text: "Ditolak" },
+  REVOKED: { status: "NEUTRAL", text: "Dicabut" },
+  EXPIRED: { status: "NEUTRAL", text: "Kedaluwarsa" },
+  USED: { status: "NEUTRAL", text: "Sudah dipakai" },
+};
+

@@ -1,0 +1,54 @@
+.totals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.totals span {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.totals strong {
+  font-family: var(--font-display), sans-serif;
+  font-variation-settings: "opsz" 72;
+  font-size: 30px;
+  line-height: 1;
+  color: inherit;
+}
+
+.totals span:first-child strong {
+  color: var(--text);
+}
+
+.figure {
+  margin: 0;
+}
+
+.chart {
+  width: 100%;
+  height: auto;
+}
+
+.tick {
+  fill: var(--dim);
+  font-size: 10px;
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 4px;
+}
