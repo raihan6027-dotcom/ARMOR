@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -84,7 +85,8 @@ class Settings(BaseSettings):
     smtp_from: str = "ARMOR <no-reply@armor.local>"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # ARMOR_ENV_FILE="" disables .env (the test suite must not read a developer .env).
+        env_file=os.environ.get("ARMOR_ENV_FILE", ".env") or None,
         env_file_encoding="utf-8",
         extra="ignore",
     )

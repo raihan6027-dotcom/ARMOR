@@ -11,6 +11,7 @@ from cryptography.fernet import Fernet
 _TMP_DB = os.path.join(tempfile.gettempdir(), "armor_test.db")
 _TMP_MODEL_DIR = tempfile.mkdtemp(prefix="armor_models_")
 
+os.environ["ARMOR_ENV_FILE"] = ""  # never read a developer backend/.env
 os.environ["DATABASE_URL"] = f"sqlite:///{_TMP_DB}"
 os.environ["GEMINI_API_KEY"] = ""  # force the local fallback
 os.environ["JWT_SECRET"] = "test-secret"
