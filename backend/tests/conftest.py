@@ -1,23 +1,30 @@
-"""Test fixtures. Configures an isolated SQLite DB and a Gemini-less environment
-(so the deterministic fallback path is exercised) BEFORE the app is imported."""
+"""Test fixtures. Configures an isolated SQLite DB, a fresh embedding key, and a
+model-free environment BEFORE the app is imported. Every test runs fully offline:
+the face model is replaced by the synthetic camera in tests/synthetic.py."""
 
 import os
 import tempfile
+
+from cryptography.fernet import Fernet
 
 # --- Environment must be set before importing anything from `app` ---
 _TMP_DB = os.path.join(tempfile.gettempdir(), "armor_test.db")
 _TMP_MODEL_DIR = tempfile.mkdtemp(prefix="armor_models_")
 
 os.environ["DATABASE_URL"] = f"sqlite:///{_TMP_DB}"
-os.environ["GEMINI_API_KEY"] = ""  # force deterministic fallback
+os.environ["GEMINI_API_KEY"] = ""  # force the local fallback
 os.environ["JWT_SECRET"] = "test-secret"
-os.environ["MODEL_DIR"] = _TMP_MODEL_DIR  # empty => face model/registry unavailable
+os.environ["MODEL_DIR"] = _TMP_MODEL_DIR  # empty => no real model is ever loaded
+os.environ["ARMOR_EMBEDDING_KEY"] = Fernet.generate_key().decode()
+os.environ["BCRYPT_ROUNDS"] = "4"  # fast hashing in tests only
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
+from app.ai.face import face_ai  # noqa: E402
 from app.db.database import Base, engine  # noqa: E402
 from app.main import app  # noqa: E402
+from tests import synthetic  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -29,6 +36,18 @@ def _fresh_db():
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture(autouse=True)
+def _synthetic_camera(monkeypatch):
+    """Replace the face model with the synthetic camera for every test."""
+    monkeypatch.setattr(face_ai, "analyze", synthetic.analyze)
+
+
+@pytest.fixture()
+def face_model_down(monkeypatch):
+    """Simulate the face model being unavailable."""
+    monkeypatch.setattr(face_ai, "analyze", lambda _b: None)
 
 
 @pytest.fixture()
@@ -59,3 +78,23 @@ def make_user(client):
         return {"Authorization": f"Bearer {body['access_token']}"}, body["user_id"]
 
     return _make
+
+
+@pytest.fixture()
+def enroll(client):
+    """Factory: enroll `person` (synthetic face) for the account in `headers`.
+    Returns the identity_id."""
+
+    def _enroll(headers, person: str, **kw) -> str:
+        r = client.post(
+            "/identity/enroll",
+            json={
+                "images": synthetic.enroll_images(person, **kw),
+                "consent": {"agreed": True, "text_version": "face-v1"},
+            },
+            headers=headers,
+        )
+        assert r.status_code == 201, r.text
+        return r.json()["identity_id"]
+
+    return _enroll

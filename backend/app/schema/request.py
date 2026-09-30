@@ -1,24 +1,32 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schema.common import Decision, Intent, MediaType, RiskLevel
 
 
 class RequestCreate(BaseModel):
-    identity_id: str
-    prompt: str
+    """Who is in the media is found by ARMOR, never named by the client."""
+
+    prompt: str = Field(min_length=1, max_length=2000)
     image: Optional[str] = None  # base64-encoded image (optional context for the AI)
     # Defaults to IMAGE when an image is attached, TEXT_ONLY otherwise.
     media_type: Optional[MediaType] = None
 
 
 # --- Structured sub-blocks of the decision response ---
+class PersonBlock(BaseModel):
+    source: str  # FACE | VOICE | TEXT
+    target: str  # SELF | OTHER (never registered/unregistered)
+    quality_ok: bool  # the face/voice was clear enough to check
+
+
 class IdentityBlock(BaseModel):
-    """Requester-safe: SELF when the media is the requester, OTHER otherwise.
-    Never the target identity id, whether it is registered, or a match score."""
+    """Requester-safe: SELF / OTHER / NONE summary plus one entry per person found.
+    Never a target identity id, whether it is registered, or a match score."""
 
     target: str
+    people: list[PersonBlock] = []
 
 
 class IntentBlock(BaseModel):
@@ -49,6 +57,7 @@ class RequestDecisionResponse(BaseModel):
     intent: IntentBlock
     risk: RiskBlock
     decision: DecisionBlock
+    checks_unavailable: list[str] = []
 
 
 class RequestHistoryItem(BaseModel):

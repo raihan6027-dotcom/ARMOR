@@ -48,8 +48,8 @@ class AIClient:
         self.gemini = gemini_client
 
     # -- Intent -------------------------------------------------------------
-    def analyze_intent(self, prompt: str, image_bytes: Optional[bytes] = None) -> dict:
-        data = self.gemini.analyze(prompt, image_bytes=image_bytes)
+    def analyze_intent(self, prompt: str) -> dict:
+        data = self.gemini.analyze(prompt)
         if data.get("available"):
             raw = data.get("intent_category") or data.get("intent")
             intent = normalize_intent(raw)
@@ -78,11 +78,10 @@ class AIClient:
         identity_target: str,
         intent: str,
         prompt: Optional[str] = None,
-        image_bytes: Optional[bytes] = None,
     ) -> dict:
         # Prefer a fresh holistic Gemini read when we have prompt/image context.
         if prompt:
-            data = self.gemini.analyze(prompt, image_bytes=image_bytes)
+            data = self.gemini.analyze(prompt)
             if data.get("available"):
                 level = normalize_risk(data.get("risk")) or risk_score_to_level(
                     data.get("risk_score")

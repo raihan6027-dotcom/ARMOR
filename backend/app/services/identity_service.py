@@ -1,30 +1,46 @@
-"""Identity enrollment / verification, backed by InsightFace + the ArcFace registry.
+"""Opt-in identities: face enrollment, matching, Lock, and the owner's data rights.
 
-Embeddings enrolled at runtime are stored (JSON) in the DB. Verification compares
-a fresh embedding to the enrolled one, falling back to the pre-deployment registry.
-When the face model is unavailable, results are flagged (`ai_available=False`) and
-never reported as a positive match.
+* Enrollment takes three captures at different angles, all passing the quality
+  gate, all of the same person, with enough yaw spread to make a still photo of
+  a photo unlikely to pass. It requires a recorded lapis 1 consent. The mean
+  embedding is stored encrypted; the photos are discarded.
+* A face that already matches another identity is refused and a dispute case is
+  opened (one identity per face).
+* Matching answers only SELF / OTHER_REGISTERED / OTHER_UNREGISTERED / UNCLEAR,
+  never a name. Embeddings of unregistered faces are dropped immediately.
 """
 
 from __future__ import annotations
 
 import base64
 import binascii
-import json
+import uuid
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Optional
 
 import numpy as np
 from sqlalchemy.orm import Session
 
-from app.ai.identity_client import identity_ai_client
-from app.ai.registry import face_registry
+from app.ai.face import DetectedFace, cosine, face_ai, l2_normalize
 from app.core.config import settings
+from app.core.crypto import decrypt_embedding, encrypt_embedding
 from app.core.exceptions import ArmorError, ForbiddenError, NotFoundError
 from app.core.logging import get_logger
+from app.models.biometric_consent import BiometricConsent
+from app.models.case import Case
+from app.models.consent import Consent
 from app.models.identity import Identity
+from app.models.permission import Permission
 from app.schema.common import BiometricMedia, IdentityTarget, LockLevel
 
 logger = get_logger("identity_service")
+
+ENROLL_CAPTURES = 3
+
+
+def _utcnow() -> datetime:
+    return datetime.now(UTC)
 
 
 def decode_image(image_b64: str) -> bytes:
@@ -34,16 +50,19 @@ def decode_image(image_b64: str) -> bytes:
     if "," in image_b64 and image_b64.strip().startswith("data:"):
         image_b64 = image_b64.split(",", 1)[1]
     try:
-        return base64.b64decode(image_b64, validate=True)
+        data = base64.b64decode(image_b64, validate=True)
     except (binascii.Error, ValueError) as exc:
         raise ArmorError("INVALID_IMAGE", f"Image is not valid base64: {exc}", 422) from exc
+    if len(data) > settings.max_image_mb * 1024 * 1024:
+        raise ArmorError(
+            "FILE_TOO_LARGE",
+            f"Image is larger than {settings.max_image_mb:g} MB.",
+            413,
+        )
+    return data
 
 
-def _cosine(a: np.ndarray, b: np.ndarray) -> float:
-    na, nb = np.linalg.norm(a), np.linalg.norm(b)
-    if na == 0 or nb == 0:
-        return 0.0
-    return float(np.dot(a, b) / (na * nb))
+# --- Lookups ---------------------------------------------------------------------
 
 
 def _find(db: Session, identity_id: str) -> Optional[Identity]:
@@ -67,80 +86,18 @@ def get_owned(db: Session, identity_id: str, user_id: str, *, hide_existence: bo
     return identity
 
 
-def enroll(
-    db: Session,
-    identity_id: str,
-    image_bytes: bytes,
-    display_name: Optional[str] = None,
-    user_id: Optional[str] = None,
-) -> tuple[Identity, bool]:
-    """Create/update an identity. Returns (identity, ai_available).
+def own_identity(db: Session, user_id: str) -> Optional[Identity]:
+    """The user's own (non-child) identity, if enrolled."""
+    return (
+        db.query(Identity).filter(Identity.user_id == user_id, Identity.is_child.is_(False)).first()
+    )
 
-    An identity that already belongs to another account can never be re-enrolled
-    (that used to hand its ownership, and SELF decisions, to the caller).
-    """
-    identity = _find(db, identity_id)
-    if identity is not None and identity.user_id != user_id:
-        raise ForbiddenError("This identity is registered to another account.")
 
-    embedding = identity_ai_client.embed(image_bytes)
-    ai_available = embedding is not None
-
+def require_own_identity(db: Session, user_id: str) -> Identity:
+    identity = own_identity(db, user_id)
     if identity is None:
-        identity = Identity(identity_id=identity_id, status="active")
-        db.add(identity)
-
-    identity.user_id = user_id
-    if display_name:
-        identity.display_name = display_name
-    if embedding is not None:
-        identity.embedding_reference = json.dumps(embedding.astype(float).tolist())
-
-    db.commit()
-    db.refresh(identity)
-    return identity, ai_available
-
-
-def _stored_embedding(identity: Identity) -> Optional[np.ndarray]:
-    if not identity.embedding_reference:
-        return None
-    try:
-        return np.asarray(json.loads(identity.embedding_reference), dtype=np.float32)
-    except (json.JSONDecodeError, ValueError):
-        return None
-
-
-def verify(db: Session, identity_id: str, image_bytes: bytes) -> dict:
-    """Verify a face against the claimed identity. Returns match/confidence/ai_available."""
-    query = identity_ai_client.embed(image_bytes)
-    if query is None:
-        return {
-            "match": False,
-            "confidence": 0.0,
-            "ai_available": False,
-            "status": "model_unavailable",
-        }
-
-    identity = db.query(Identity).filter(Identity.identity_id == identity_id).first()
-
-    score: Optional[float] = None
-    stored = _stored_embedding(identity) if identity else None
-    if stored is not None:
-        score = _cosine(query, stored)
-    else:
-        score = face_registry.score_against(query, identity_id)
-
-    if score is None:
-        # No enrolled embedding and not in the registry.
-        return {"match": False, "confidence": 0.0, "ai_available": True, "status": "not_enrolled"}
-
-    match = score >= settings.face_match_threshold
-    return {
-        "match": bool(match),
-        "confidence": round(score, 4),
-        "ai_available": True,
-        "status": "verified" if match else "mismatch",
-    }
+        raise NotFoundError("You have not enrolled an identity yet.")
+    return identity
 
 
 def lock_level(identity: Identity, media: BiometricMedia) -> LockLevel:
@@ -151,49 +108,241 @@ def lock_level(identity: Identity, media: BiometricMedia) -> LockLevel:
         return LockLevel.ALL  # unreadable lock state fails closed
 
 
-def determine_target(
-    db: Session, requester_user_id: str, identity_id: str, image_bytes: Optional[bytes]
-) -> dict:
-    """Classify the single claimed identity of a request (pre-Fase 3 gateway).
+# --- Matching ----------------------------------------------------------------------
 
-    SELF: the requester owns the identity (and, if an image is supplied, the face
-    matches). OTHER_REGISTERED: the identity exists and belongs to someone else.
-    OTHER_UNREGISTERED: no such identity. UNCLEAR: the requester claims their own
-    identity but the supplied face does not match it.
+
+@dataclass
+class FaceMatch:
+    target: IdentityTarget
+    identity: Optional[Identity]
+    score: Optional[float]
+
+
+def registered_face_embeddings(db: Session) -> list[tuple[Identity, np.ndarray]]:
+    rows = db.query(Identity).filter(Identity.face_embedding.is_not(None)).all()
+    return [(row, decrypt_embedding(row.face_embedding)) for row in rows]
+
+
+def best_match(
+    embedding: np.ndarray, index: list[tuple[Identity, np.ndarray]]
+) -> tuple[Optional[Identity], float]:
+    best: tuple[Optional[Identity], float] = (None, -1.0)
+    for identity, vec in index:
+        s = cosine(embedding, vec)
+        if s > best[1]:
+            best = (identity, s)
+    return best
+
+
+def classify_face(
+    face: DetectedFace, requester_user_id: str, index: list[tuple[Identity, np.ndarray]]
+) -> FaceMatch:
+    """SELF / OTHER_REGISTERED / OTHER_UNREGISTERED / UNCLEAR for one face.
+
+    Low quality or a score inside the gray zone (threshold +/- margin) is UNCLEAR,
+    which the policy treats as REVIEW at best (CLAUDE.md bagian 7, gagal aman).
     """
-    identity = _find(db, identity_id)
-    owned = identity is not None and identity.user_id == requester_user_id
+    if not face.quality_ok:
+        return FaceMatch(IdentityTarget.UNCLEAR, None, None)
+    identity, score = best_match(face.embedding, index)
+    hi = settings.face_match_threshold + settings.face_gray_margin
+    lo = settings.face_match_threshold - settings.face_gray_margin
+    if identity is None or score < lo:
+        return FaceMatch(IdentityTarget.OTHER_UNREGISTERED, None, None)
+    if score < hi:
+        return FaceMatch(IdentityTarget.UNCLEAR, None, round(score, 4))
+    if identity.user_id == requester_user_id and not identity.is_child:
+        return FaceMatch(IdentityTarget.SELF, identity, round(score, 4))
+    return FaceMatch(IdentityTarget.OTHER_REGISTERED, identity, round(score, 4))
 
-    face_matches: Optional[bool] = None
-    score: Optional[float] = None
-    face_available = True
-    if image_bytes and identity is not None:
-        result = verify(db, identity_id, image_bytes)
-        face_matches = result["match"]
-        score = result["confidence"]
-        face_available = result["ai_available"]
 
-    if identity is None:
-        target = IdentityTarget.OTHER_UNREGISTERED
-    elif owned:
-        target = (
-            IdentityTarget.SELF
-            if image_bytes is None or face_matches or not face_available
-            else IdentityTarget.UNCLEAR
+# --- Enrollment --------------------------------------------------------------------
+
+
+def _analyze_capture(image_bytes: bytes, index: int) -> DetectedFace:
+    faces = face_ai.analyze(image_bytes)
+    if faces is None:
+        raise ArmorError(
+            "FACE_MODEL_UNAVAILABLE",
+            "The face model is not available, so enrollment cannot run right now.",
+            503,
         )
-    else:
-        target = IdentityTarget.OTHER_REGISTERED
+    if not faces:
+        raise ArmorError(
+            "FACE_NOT_FOUND", "No face was found in a capture.", 422, {"capture": index}
+        )
+    if len(faces) > 1:
+        raise ArmorError(
+            "MULTIPLE_FACES",
+            "A capture contains more than one face. Only you should be in frame.",
+            422,
+            {"capture": index},
+        )
+    face = faces[0]
+    if not face.quality_ok:
+        raise ArmorError(
+            "FACE_QUALITY_LOW",
+            "A capture is too small, blurry, or turned too far away.",
+            422,
+            {"capture": index, "issues": face.issues},
+        )
+    return face
 
+
+def _check_same_person(faces: list[DetectedFace]) -> None:
+    for i in range(len(faces)):
+        for j in range(i + 1, len(faces)):
+            if cosine(faces[i].embedding, faces[j].embedding) < settings.face_same_person_threshold:
+                raise ArmorError(
+                    "POSES_DIFFERENT_PERSON",
+                    "The captures do not look like the same person.",
+                    422,
+                    {"captures": [i, j]},
+                )
+
+
+def _check_pose_spread(faces: list[DetectedFace]) -> None:
+    yaws = [f.yaw for f in faces]
+    spread = max(yaws) - min(yaws)
+    if spread < settings.face_min_pose_spread_deg:
+        raise ArmorError(
+            "POSE_SPREAD_TOO_SMALL",
+            "Turn your head slightly left and right between captures.",
+            422,
+            {"spread_deg": round(spread, 1), "required_deg": settings.face_min_pose_spread_deg},
+        )
+
+
+def check_enrollment_captures(images: list[bytes]) -> np.ndarray:
+    """All enrollment defenses that need no database: one clear face per capture,
+    the same person in all three, and enough change of angle between them.
+    Returns the L2-normalized mean embedding; raises ArmorError otherwise.
+    Also used by ml/face_eval/attacks.py so the evaluation tests this exact code."""
+    faces = [_analyze_capture(img, i) for i, img in enumerate(images)]
+    _check_same_person(faces)
+    _check_pose_spread(faces)
+    return l2_normalize(np.mean([f.embedding for f in faces], axis=0))
+
+
+def duplicate_of(mean: np.ndarray, others: list[tuple[Identity, np.ndarray]]):
+    """One identity per face. The gray zone counts as a match here, so a borderline
+    lookalike goes to a human (dispute) instead of creating a second identity."""
+    match, score = best_match(mean, others)
+    if match is not None and score >= settings.face_match_threshold - settings.face_gray_margin:
+        return match
+    return None
+
+
+def _record_consent(
+    db: Session, user_id: str, identity_id: str, media: BiometricMedia, version: str
+) -> BiometricConsent:
+    record = BiometricConsent(
+        record_id=str(uuid.uuid4()),
+        user_id=user_id,
+        identity_id=identity_id,
+        media=media.value,
+        text_version=version,
+    )
+    db.add(record)
+    return record
+
+
+def require_consent(agreed: bool, text_version: str, media: BiometricMedia) -> str:
+    current = (
+        settings.consent_text_face if media is BiometricMedia.FACE else settings.consent_text_voice
+    )
+    if not agreed:
+        raise ArmorError(
+            "CONSENT_REQUIRED",
+            "Biometric processing needs your explicit agreement first.",
+            422,
+        )
+    if text_version != current:
+        raise ArmorError(
+            "CONSENT_TEXT_OUTDATED",
+            "The consent text you agreed to is not the current version.",
+            422,
+            {"current_version": current},
+        )
+    return current
+
+
+def enroll_face(
+    db: Session,
+    user_id: str,
+    images: list[bytes],
+    consent_agreed: bool,
+    consent_version: str,
+    display_name: Optional[str] = None,
+) -> Identity:
+    version = require_consent(consent_agreed, consent_version, BiometricMedia.FACE)
+    if len(images) != ENROLL_CAPTURES:
+        raise ArmorError("CAPTURES_REQUIRED", "Exactly three captures are required.", 422)
+
+    mean = check_enrollment_captures(images)
+
+    existing = own_identity(db, user_id)
+    others = [
+        (ident, vec)
+        for ident, vec in registered_face_embeddings(db)
+        if existing is None or ident.identity_id != existing.identity_id
+    ]
+    match = duplicate_of(mean, others)
+    if match is not None:
+        case = Case(
+            case_id=str(uuid.uuid4()),
+            kind="DISPUTE",
+            reporter_id=user_id,
+            identity_id=match.identity_id,
+            media=BiometricMedia.FACE.value,
+            note="Opened automatically: enrollment matched an existing identity.",
+        )
+        db.add(case)
+        db.commit()
+        logger.info("enrollment refused: duplicate face, dispute case opened")
+        raise ArmorError(
+            "FACE_ALREADY_REGISTERED",
+            "This face is already registered to another account. You can file a dispute.",
+            409,
+            {"case_id": case.case_id},
+        )
+
+    identity = existing
+    if identity is None:
+        identity = Identity(identity_id=str(uuid.uuid4()), user_id=user_id)
+        db.add(identity)
+    if display_name:
+        identity.display_name = display_name
+    identity.face_embedding = encrypt_embedding(mean)
+    identity.face_enrolled_at = _utcnow()
+    _record_consent(db, user_id, identity.identity_id, BiometricMedia.FACE, version)
+    db.commit()
+    db.refresh(identity)
+    return identity
+
+
+def verify_own_face(db: Session, identity: Identity, image_bytes: bytes) -> dict:
+    """Does this photo show the owner's own enrolled face? Owner-only."""
+    if identity.face_embedding is None:
+        return {"match": False, "score": None, "status": "not_enrolled", "ai_available": True}
+    faces = face_ai.analyze(image_bytes)
+    if faces is None:
+        return {"match": False, "score": None, "status": "model_unavailable", "ai_available": False}
+    if not faces:
+        return {"match": False, "score": None, "status": "no_face", "ai_available": True}
+    score = cosine(faces[0].embedding, decrypt_embedding(identity.face_embedding))
+    hi = settings.face_match_threshold + settings.face_gray_margin
+    lo = settings.face_match_threshold - settings.face_gray_margin
+    status = "verified" if score >= hi else ("unclear" if score >= lo else "mismatch")
     return {
-        "target": target,
-        "identity": identity,
-        "score": score,
-        "face_available": face_available,
+        "match": status == "verified",
+        "score": round(score, 4),
+        "status": status,
+        "ai_available": True,
     }
 
 
-def get_profile(db: Session, identity_id: str, user_id: str) -> Identity:
-    return get_owned(db, identity_id, user_id, hide_existence=True)
+# --- Owner controls ----------------------------------------------------------------
 
 
 def lock(
@@ -204,7 +353,7 @@ def lock(
     media: Optional[BiometricMedia] = None,
 ) -> Identity:
     """Set the Lock level of an identity the caller owns, per media (None = both).
-    Unregistered ids can no longer be claimed."""
+    Unregistered ids can never be claimed."""
     identity = get_owned(db, identity_id, user_id, hide_existence=False)
     if media in (None, BiometricMedia.FACE):
         identity.face_lock = level.value
@@ -215,3 +364,47 @@ def lock(
     db.commit()
     db.refresh(identity)
     return identity
+
+
+def revoke_media(db: Session, user_id: str, media: BiometricMedia) -> Identity:
+    """Withdraw lapis 1 consent for one media: stamp the record and delete that
+    media's embedding immediately (CLAUDE.md bagian 9, pencabutan per media)."""
+    identity = require_own_identity(db, user_id)
+    now = _utcnow()
+    for record in (
+        db.query(BiometricConsent)
+        .filter(
+            BiometricConsent.identity_id == identity.identity_id,
+            BiometricConsent.media == media.value,
+            BiometricConsent.revoked_at.is_(None),
+        )
+        .all()
+    ):
+        record.revoked_at = now
+    if media is BiometricMedia.FACE:
+        identity.face_embedding = None
+        identity.face_enrolled_at = None
+    else:
+        identity.voice_embedding = None
+        identity.voice_enrolled_at = None
+    db.commit()
+    db.refresh(identity)
+    return identity
+
+
+def delete_all(db: Session, user_id: str) -> int:
+    """Delete every identity the user owns and everything attached to them."""
+    identities = db.query(Identity).filter(Identity.user_id == user_id).all()
+    ids = [i.identity_id for i in identities]
+    if ids:
+        db.query(Permission).filter(Permission.identity_id.in_(ids)).delete(
+            synchronize_session=False
+        )
+        db.query(Consent).filter(Consent.identity_id.in_(ids)).delete(synchronize_session=False)
+        db.query(BiometricConsent).filter(BiometricConsent.identity_id.in_(ids)).delete(
+            synchronize_session=False
+        )
+        for identity in identities:
+            db.delete(identity)
+    db.commit()
+    return len(ids)

@@ -1,25 +1,16 @@
-import base64
-
 import pytest
 
-from app.ai.identity_client import identity_ai_client
 
-
-@pytest.fixture(autouse=True)
-def _owned_identity(client, auth, monkeypatch):
-    # Fase 1: permissions are owner-only, so the caller first owns ARMOR-001.
-    monkeypatch.setattr(identity_ai_client, "embed", lambda _b: None)
+@pytest.fixture()
+def identity(auth, enroll):
     headers, _ = auth
-    img = base64.b64encode(b"fake").decode()
-    client.post(
-        "/identity/enroll", json={"identity_id": "ARMOR-001", "image": img}, headers=headers
-    )
+    return enroll(headers, "raka")
 
 
-def test_default_permissions(client, auth):
+def test_default_permissions(client, auth, identity):
     # Fase 2: permissions are per intent x media (CLAUDE.md bagian 6).
     headers, _ = auth
-    r = client.get("/permissions", params={"identity_id": "ARMOR-001"}, headers=headers)
+    r = client.get("/permissions", params={"identity_id": identity}, headers=headers)
     assert r.status_code == 200
     body = r.json()
     face, voice = body["permissions"]["FACE"], body["permissions"]["VOICE"]
@@ -35,12 +26,12 @@ def test_default_permissions(client, auth):
     }
 
 
-def test_override_permission(client, auth):
+def test_override_permission(client, auth, identity):
     headers, _ = auth
     r = client.post(
         "/permissions",
         json={
-            "identity_id": "ARMOR-001",
+            "identity_id": identity,
             "intent": "COMMERCIAL_USE",
             "media": "FACE",
             "decision": "ALLOW",
@@ -49,44 +40,44 @@ def test_override_permission(client, auth):
     )
     assert r.status_code == 200
 
-    r = client.get("/permissions", params={"identity_id": "ARMOR-001"}, headers=headers)
+    r = client.get("/permissions", params={"identity_id": identity}, headers=headers)
     perms = r.json()["permissions"]
     assert perms["FACE"]["COMMERCIAL_USE"] == "ALLOW"
     assert perms["VOICE"]["COMMERCIAL_USE"] == "DENY"  # media are independent
 
 
-def test_harmful_intents_cannot_be_unlocked(client, auth):
+def test_harmful_intents_cannot_be_unlocked(client, auth, identity):
     headers, _ = auth
     r = client.post(
         "/permissions",
-        json={"identity_id": "ARMOR-001", "intent": "DEFAMATION", "decision": "ALLOW"},
+        json={"identity_id": identity, "intent": "DEFAMATION", "decision": "ALLOW"},
         headers=headers,
     )
     assert r.status_code == 422
     assert r.json()["error"]["code"] == "INTENT_LOCKED"
 
 
-def test_uncertain_is_not_a_permission(client, auth):
+def test_uncertain_is_not_a_permission(client, auth, identity):
     headers, _ = auth
     r = client.post(
         "/permissions",
-        json={"identity_id": "ARMOR-001", "intent": "UNCERTAIN", "decision": "ALLOW"},
+        json={"identity_id": identity, "intent": "UNCERTAIN", "decision": "ALLOW"},
         headers=headers,
     )
     assert r.status_code == 422
     assert r.json()["error"]["code"] == "INVALID_INTENT"
 
 
-def test_permission_invalid_decision_422(client, auth):
+def test_permission_invalid_decision_422(client, auth, identity):
     headers, _ = auth
     r = client.post(
         "/permissions",
-        json={"identity_id": "ARMOR-001", "intent": "COMMERCIAL_USE", "decision": "PERHAPS"},
+        json={"identity_id": identity, "intent": "COMMERCIAL_USE", "decision": "PERHAPS"},
         headers=headers,
     )
     assert r.status_code == 422
 
 
-def test_permissions_require_auth(client):
-    r = client.get("/permissions", params={"identity_id": "ARMOR-001"})
+def test_permissions_require_auth(client, identity):
+    r = client.get("/permissions", params={"identity_id": identity})
     assert r.status_code == 401

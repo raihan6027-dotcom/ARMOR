@@ -13,10 +13,17 @@ logger = get_logger("errors")
 class ArmorError(Exception):
     """Domain error carrying a stable machine code and an HTTP status."""
 
-    def __init__(self, code: str, message: str, status_code: int = status.HTTP_400_BAD_REQUEST):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        status_code: int = status.HTTP_400_BAD_REQUEST,
+        details: dict | None = None,
+    ):
         self.code = code
         self.message = message
         self.status_code = status_code
+        self.details = details
         super().__init__(message)
 
 
@@ -57,7 +64,8 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(ArmorError)
     async def _armor_error(_: Request, exc: ArmorError):
         logger.warning("ArmorError %s: %s", exc.code, exc.message)
-        return _envelope(exc.code, exc.message, exc.status_code)
+        extra = {"details": exc.details} if exc.details else None
+        return _envelope(exc.code, exc.message, exc.status_code, extra)
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error(_: Request, exc: RequestValidationError):

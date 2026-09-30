@@ -24,7 +24,15 @@ jobs:
         run: ruff check .
       - name: Ruff (format)
         run: ruff format --check .
-      - name: Pytest
+      - name: Ruff (ml)
+        run: |
+          ruff check --config pyproject.toml ../ml
+          ruff format --config pyproject.toml --check ../ml
+      - name: Pytest (backend)
         env:
           JWT_SECRET: ci-test-secret
         run: pytest -q
+      - name: Pytest (ml)
+        run: |
+          pip install -r ../ml/requirements.txt
+          pytest -q ../ml -p no:cacheprovider

@@ -13,6 +13,7 @@ from app.decision.router import router as decision_router
 from app.identity.router import router as identity_router
 from app.intent.router import router as intent_router
 from app.logs.router import router as logs_router
+from app.me.router import router as me_router
 from app.permission.router import router as permission_router
 from app.requests.router import router as requests_router
 from app.risk.router import router as risk_router
@@ -58,6 +59,7 @@ for r in (
     decision_router,
     requests_router,
     logs_router,
+    me_router,
 ):
     app.include_router(r)
 
@@ -69,17 +71,13 @@ def root():
 
 @app.get("/health", tags=["Meta"])
 def health():
-    from app.ai.gemini_client import gemini_client
-    from app.ai.identity_client import identity_ai_client
-    from app.ai.registry import face_registry
+    from app.ai.face import face_ai
 
-    # Report cheap status only — do NOT trigger heavy model/registry loading here.
+    # Cheap status only: never triggers a model load here.
     return {
         "status": "ok",
         "ai": {
-            "gemini_configured": gemini_client.configured,
-            "face_model_loaded": identity_ai_client.loaded,
-            "registry_loaded": face_registry.loaded,
-            "registry_file_present": face_registry.file_exists(),
+            "face_model_loaded": face_ai.loaded,
+            "face_model_error": face_ai.init_error,
         },
     }

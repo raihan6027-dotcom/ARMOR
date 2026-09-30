@@ -6,17 +6,22 @@ from app.schema.common import BiometricMedia, ConsentStatus, Intent
 
 
 class ConsentRequest(BaseModel):
-    identity_id: str
-    request_id: Optional[str] = None
-    intent: Optional[Intent] = None
-    media: Optional[BiometricMedia] = None
+    """Ask for consent on one of your own requests that is waiting for review."""
+
+    request_id: str
+    intent: Optional[Intent] = None  # default: the request's intent
+    media: Optional[BiometricMedia] = None  # default: the media each target governs
 
 
 class ConsentRequestResponse(BaseModel):
-    consent_id: str
-    identity_id: str
+    request_id: str
     status: ConsentStatus
-    message: str = "Consent request created successfully"
+    message: str = "Permintaan persetujuan dikirim jika diperlukan."
+
+
+class ConsentRequestStatusResponse(BaseModel):
+    request_id: str
+    status: ConsentStatus
 
 
 class ConsentStatusResponse(BaseModel):
@@ -24,6 +29,24 @@ class ConsentStatusResponse(BaseModel):
     identity_id: str
     status: ConsentStatus
     request_id: Optional[str] = None
+    intent: Optional[str] = None
+    media: Optional[str] = None
+
+
+class ConsentInboxItem(BaseModel):
+    consent_id: str
+    identity_id: str
+    requester_email: Optional[str] = None
+    intent: Optional[str] = None
+    media: Optional[str] = None
+    prompt: Optional[str] = None
+    media_type: Optional[str] = None
+    status: ConsentStatus
+    created_at: Optional[str] = None
+
+
+class ConsentInboxResponse(BaseModel):
+    items: list[ConsentInboxItem]
 
 
 class ConsentRespondRequest(BaseModel):

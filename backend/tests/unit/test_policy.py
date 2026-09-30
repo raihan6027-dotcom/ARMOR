@@ -267,7 +267,7 @@ def test_fail_safe_component_unavailable_raises_allow_to_review():
     res = run([face(SELF)], unavailable=("face",))
     assert res.decision is R
     assert res.reason_code == "COMPONENT_UNAVAILABLE"
-    assert res.requester_code == "COMPONENT_UNAVAILABLE"  # SELF sees the full reason
+    assert res.requester_code == "CHECK_UNAVAILABLE"  # same public code for everyone
 
 
 def test_fail_safe_risk_undetermined():

@@ -1,171 +1,155 @@
-"""End-to-end orchestration through POST /requests (the ARMOR gateway).
+"""End-to-end through POST /requests (the ARMOR gateway), fully offline.
 
-Runs entirely on the deterministic fallback path (no Gemini key, no face model)
-so the three canonical ARMOR scenarios are reproducible offline.
+Faces come from the synthetic camera; the client never names who is in the media.
+Scenario numbers refer to CLAUDE.md Lampiran A (the full suite is Fase 11).
 """
-
-import base64
 
 import pytest
 
-from app.ai.identity_client import identity_ai_client
-
-IMG_B64 = base64.b64encode(b"fake").decode()
-
-
-@pytest.fixture(autouse=True)
-def _no_face_download(monkeypatch):
-    # Enrollment must not trigger an InsightFace model download during tests.
-    monkeypatch.setattr(identity_ai_client, "embed", lambda _b: None)
+from app.db.database import SessionLocal
+from app.models.request import Request
+from app.models.request_target import RequestTarget
+from tests.synthetic import face, image
 
 
-def test_scenario_a_self_personal_allow(client, auth):
-    headers, _ = auth
-    # Enroll an identity owned by the requester -> trusted SELF.
-    client.post(
-        "/identity/enroll", json={"identity_id": "ARMOR-SELF", "image": IMG_B64}, headers=headers
-    )
-
-    r = client.post(
-        "/requests",
-        json={
-            "identity_id": "ARMOR-SELF",
-            "prompt": "Buatkan avatar kartun menggunakan wajah saya.",
-        },
-        headers=headers,
-    )
-    assert r.status_code == 200
-    body = r.json()
-    assert body["identity"]["target"] == "SELF"
-    assert body["intent"]["label"] == "PERSONAL_CREATION"
-    assert body["decision"]["action"] == "ALLOW"
+@pytest.fixture()
+def people(make_user, enroll):
+    """A (raka) and B (sinta) are registered; C (citra) is not."""
+    a_h, _ = make_user("raka@example.com")
+    b_h, _ = make_user("sinta@example.com")
+    a_id = enroll(a_h, "raka")
+    b_id = enroll(b_h, "sinta")
+    return {"A": a_h, "B": b_h, "A_id": a_id, "B_id": b_id}
 
 
-def test_scenario_b_other_commercial_review(client, auth):
-    headers, _ = auth
-    r = client.post(
-        "/requests",
-        json={
-            "identity_id": "ARMOR-OTHER",  # not owned by requester -> OTHER
-            "prompt": "Buat video orang ini sedang mempromosikan produk X.",
-        },
-        headers=headers,
-    )
-    body = r.json()
-    assert body["identity"]["target"] == "OTHER"
-    assert body["intent"]["label"] == "COMMERCIAL_USE"
-    assert body["risk"]["level"] == "MEDIUM"  # Fase 2 fallback, see test_intent_risk
-    assert body["decision"]["action"] == "REVIEW"
+def ask(client, headers, prompt, *faces, **extra):
+    body = {"prompt": prompt, **extra}
+    if faces:
+        body["image"] = image(*faces)
+    r = client.post("/requests", json=body, headers=headers)
+    assert r.status_code == 200, r.text
+    return r.json()
 
 
-def test_scenario_c_other_impersonation_deny(client, auth):
-    headers, _ = auth
-    r = client.post(
-        "/requests",
-        json={
-            "identity_id": "ARMOR-OTHER-2",
-            "prompt": "Buat video orang ini mengatakan sesuatu yang tidak pernah dia katakan.",
-        },
-        headers=headers,
-    )
-    body = r.json()
-    assert body["intent"]["label"] == "IMPERSONATION"
-    assert body["decision"]["action"] == "DENY"
+def test_scenario_1_brighten_own_photo(client, people):
+    r = ask(client, people["A"], "Cerahkan foto saya ini.", face("raka"))
+    assert r["identity"]["target"] == "SELF"
+    assert r["decision"]["action"] == "ALLOW"
 
 
-def test_history_records_requests(client, auth):
-    headers, _ = auth
-    client.post(
-        "/requests", json={"identity_id": "X", "prompt": "buat avatar kartun"}, headers=headers
-    )
-    client.post(
-        "/requests", json={"identity_id": "Y", "prompt": "promosikan produk ini"}, headers=headers
-    )
-    r = client.get("/requests", headers=headers)
-    body = r.json()
-    assert body["total"] >= 2
-    assert len(body["items"]) >= 2
-    assert body["items"][0]["decision"] in ("ALLOW", "REVIEW", "DENY")
+def test_scenario_2_cartoon_avatar_of_self(client, people):
+    r = ask(client, people["A"], "Buatkan avatar kartun dari wajah saya.", face("raka"))
+    assert r["decision"]["action"] == "ALLOW"
+    assert r["intent"]["label"] == "PERSONAL_CREATION"
 
 
-def test_requests_require_auth(client):
-    r = client.post("/requests", json={"identity_id": "X", "prompt": "hi"})
-    assert r.status_code == 401
+def test_scenario_3_superhero_caricature_of_unregistered(client, people):
+    r = ask(client, people["A"], "Buat karikatur superhero dari foto ini.", face("citra"))
+    assert r["identity"]["target"] == "OTHER"
+    assert r["decision"]["action"] == "ALLOW"
+    assert r["decision"]["label_required"] is True
 
 
-def _enroll(client, headers, identity_id):
-    client.post(
-        "/identity/enroll", json={"identity_id": identity_id, "image": IMG_B64}, headers=headers
-    )
-
-
-AD = {"identity_id": "ARMOR-B", "prompt": "Buat iklan produk kopi dengan wajah orang ini."}
-
-
-def test_consent_scope_turns_review_into_allow(client, make_user):
-    # Lampiran A skenario 4 on the pre-Fase-3 gateway: A asks to use the face of B
-    # in an ad -> REVIEW; B approves (scope COMMERCIAL_USE x FACE) -> ALLOW.
-    b_h, _ = make_user("b@example.com")
-    a_h, _ = make_user("a@example.com")
-    _enroll(client, b_h, "ARMOR-B")
-
-    assert client.post("/requests", json=AD, headers=a_h).json()["decision"]["action"] == "REVIEW"
-    cid = client.post(
-        "/consent/request",
-        json={"identity_id": "ARMOR-B", "intent": "COMMERCIAL_USE", "media": "FACE"},
-        headers=a_h,
-    ).json()["consent_id"]
-    client.post("/consent/respond", json={"consent_id": cid, "decision": "APPROVED"}, headers=b_h)
-    assert client.post("/requests", json=AD, headers=a_h).json()["decision"]["action"] == "ALLOW"
-
-    # Consent for one purpose does not carry over to another.
-    politics = {"identity_id": "ARMOR-B", "prompt": "Buat poster kampanye pemilu orang ini."}
-    r = client.post("/requests", json=politics, headers=a_h).json()
-    assert r["decision"]["action"] == "REVIEW"
-
-
-def test_consent_denied_turns_review_into_deny(client, make_user):
-    # Lampiran A skenario 5.
-    b_h, _ = make_user("b@example.com")
-    a_h, _ = make_user("a@example.com")
-    _enroll(client, b_h, "ARMOR-B")
-    cid = client.post(
-        "/consent/request",
-        json={"identity_id": "ARMOR-B", "intent": "COMMERCIAL_USE"},
-        headers=a_h,
-    ).json()["consent_id"]
-    client.post("/consent/respond", json={"consent_id": cid, "decision": "DENIED"}, headers=b_h)
-    r = client.post("/requests", json=AD, headers=a_h).json()
-    assert r["decision"]["action"] == "DENY"
-    assert r["decision"]["reason_code"] == "NOT_PERMITTED"  # uniform: no "consent denied"
-
-
-def test_requester_gets_safe_prompt_suggestion_on_deny(client, auth):
-    # Lampiran A skenario 6.
-    headers, _ = auth
-    r = client.post(
-        "/requests",
-        json={
-            "identity_id": "SOMEONE",
-            "prompt": "Buat orang ini memakai baju tahanan dan diborgol.",
-        },
-        headers=headers,
-    ).json()
+def test_scenario_6_prisoner_outfit_denied_with_suggestion(client, people):
+    r = ask(client, people["A"], "Buat orang ini memakai baju tahanan dan diborgol.", face("citra"))
     assert r["decision"]["action"] == "DENY"
     assert r["decision"]["reason_code"] == "HARMFUL_DEFAMATION"
     assert "tahanan" in r["decision"]["reason"]
     assert r["decision"]["suggestion"] == "Buat karikatur superhero dari foto ini."
 
 
-def test_lock_commercial_political_blocks_ads_but_not_edits(client, make_user):
-    b_h, _ = make_user("b@example.com")
-    a_h, _ = make_user("a@example.com")
-    _enroll(client, b_h, "ARMOR-B")
-    client.post(
-        "/identity/lock",
-        json={"identity_id": "ARMOR-B", "level": "COMMERCIAL_POLITICAL", "media": "FACE"},
-        headers=b_h,
+def test_scenario_8_light_edit_of_locked_face_denied(client, people):
+    client.post("/identity/lock", json={"identity_id": people["B_id"]}, headers=people["B"])
+    r = ask(client, people["A"], "Edit ringan, perbaiki pencahayaan foto ini.", face("sinta"))
+    assert r["decision"]["action"] == "DENY"
+    assert r["decision"]["reason_code"] == "NOT_PERMITTED"  # never "locked"
+
+
+def test_scenario_9_disguised_face_is_reviewed(client, people):
+    # Sunglasses / blur push the score into the gray zone -> UNCLEAR -> REVIEW.
+    r = ask(
+        client, people["A"], "Buat iklan produk kopi dengan wajah ini.", face("sinta", cos=0.40)
     )
-    assert client.post("/requests", json=AD, headers=a_h).json()["decision"]["action"] == "DENY"
-    edit = {"identity_id": "ARMOR-B", "prompt": "Edit ringan, perbaiki pencahayaan foto ini."}
-    assert client.post("/requests", json=edit, headers=a_h).json()["decision"]["action"] == "ALLOW"
+    assert r["decision"]["action"] == "REVIEW"
+
+
+def test_blurry_face_is_unclear(client, people):
+    r = ask(client, people["A"], "Buat iklan produk kopi.", face("citra", blur=3))
+    assert r["identity"]["people"][0]["quality_ok"] is False
+    assert r["decision"]["action"] == "REVIEW"
+
+
+def test_scenario_10_two_faces_strictest_wins(client, people):
+    r = ask(
+        client,
+        people["A"],
+        "Buat iklan produk kopi dengan foto ini.",
+        face("raka"),
+        face("sinta"),
+    )
+    assert r["decision"]["action"] == "REVIEW"
+    assert sorted(p["target"] for p in r["identity"]["people"]) == ["OTHER", "SELF"]
+    with SessionLocal() as db:
+        rows = db.query(RequestTarget).filter_by(request_id=r["request_id"]).all()
+        assert sorted(t.target_type for t in rows) == ["OTHER_REGISTERED", "SELF"]
+
+
+def test_client_cannot_name_a_target(client, people):
+    # The old identity_id field is gone; the only way in is the media itself.
+    r = client.post(
+        "/requests",
+        json={"prompt": "Buat iklan", "identity_id": people["B_id"]},
+        headers=people["A"],
+    )
+    assert r.status_code == 200
+    assert r.json()["identity"]["target"] == "NONE"
+    with SessionLocal() as db:
+        assert db.query(RequestTarget).filter_by(request_id=r.json()["request_id"]).count() == 0
+
+
+def test_no_face_in_image(client, people):
+    r = ask(client, people["A"], "Buat ilustrasi pemandangan gunung.", image=image())
+    assert r["identity"] == {"target": "NONE", "people": []}
+    assert r["decision"]["action"] == "ALLOW"
+
+
+def test_face_model_down_fails_safe(client, people, face_model_down):
+    r = ask(client, people["A"], "Buatkan avatar kartun.", face("raka"))
+    assert r["decision"]["action"] == "REVIEW"
+    assert r["decision"]["reason_code"] == "CHECK_UNAVAILABLE"
+    assert r["checks_unavailable"] == ["face"]
+
+
+def test_registered_and_unregistered_look_the_same(client, people):
+    prompt = "Buat iklan produk kopi dengan wajah orang ini."
+    registered = ask(client, people["A"], prompt, face("sinta"))
+    unregistered = ask(client, people["A"], prompt, face("citra"))
+    for key in ("identity", "decision", "intent", "risk"):
+        assert registered[key] == unregistered[key], key
+    assert people["B_id"] not in str(registered)
+
+
+def test_unregistered_embedding_is_not_stored(client, people):
+    r = ask(client, people["A"], "Buat karikatur superhero dari foto ini.", face("citra"))
+    with SessionLocal() as db:
+        target = db.query(RequestTarget).filter_by(request_id=r["request_id"]).one()
+        assert (target.target_type, target.identity_id, target.score) == (
+            "OTHER_UNREGISTERED",
+            None,
+            None,
+        )
+        assert db.query(Request).filter_by(request_id=r["request_id"]).one().prompt
+
+
+def test_history_records_requests(client, auth):
+    headers, _ = auth
+    ask(client, headers, "buat avatar kartun")
+    ask(client, headers, "promosikan produk ini")
+    body = client.get("/requests", headers=headers).json()
+    assert body["total"] == 2
+    assert body["items"][0]["decision"] in ("ALLOW", "REVIEW", "DENY")
+
+
+def test_requests_require_auth(client):
+    r = client.post("/requests", json={"prompt": "hi"})
+    assert r.status_code == 401

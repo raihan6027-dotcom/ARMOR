@@ -1,17 +1,15 @@
-"""Gemini-backed analysis client (intent / risk / legal-consent context).
+"""LEGACY text-only Gemini analysis (intent / risk), removed from the main path in
+Fase 4-5 (CLAUDE.md bagian 12).
 
-Mirrors the team's Colab pipeline: one multimodal call takes the image + subject
-identity + prompt and returns a structured JSON analysis. The model's own
-"decision" is captured but treated as ADVISORY only — the deterministic policy
-engine produces the authoritative ALLOW/REVIEW/DENY.
-
-If no API key is configured or the call fails, `available` is False and callers
-apply a safe fallback (never auto-ALLOW).
+Since Fase 3 this client never receives an image, a face, a voice, or a question
+about who a person is: only the prompt text. The model's own "decision" is
+advisory and ignored by the policy engine. Without an API key (the default, and
+always in tests and the offline demo) `available` is False and callers use the
+local fallback.
 """
 
 from __future__ import annotations
 
-import io
 import json
 from typing import Any, Optional
 
@@ -25,15 +23,11 @@ You are a senior cyber-law and content-policy analyst for a digital-identity
 protection system. Analyze the request below and respond with PURE JSON only
 (no markdown fences, no commentary).
 
-Subject identity: "{identity}"
-Identity is unknown/unverified: {is_unknown}
 User prompt: "{prompt}"
 
 Return exactly these keys:
 - "detected_language": source language of the prompt (e.g. "Indonesian", "English").
 - "translated_prompt": accurate English translation of the prompt.
-- "profession": subject's main field if a public figure, else "Unknown".
-- "is_public_figure": "Yes" or "No".
 - "intent": the requester's underlying goal in <=5 words.
 - "intent_category": ONE of PERSONAL_CREATION, PERSONAL_EDITING, COMMERCIAL_USE,
   IMPERSONATION, DEFAMATION, POLITICAL_USE, DECEPTIVE, UNCERTAIN.
@@ -109,37 +103,9 @@ class GeminiClient:
                     return None
             return None
 
-    def _image_part(self, image_bytes: Optional[bytes]):
-        if not image_bytes:
-            return None
-        try:
-            from PIL import Image
-
-            return Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        except Exception as exc:
-            logger.warning("Could not decode image for Gemini: %s", exc)
-            return None
-
-    def analyze(
-        self,
-        prompt: str,
-        image_bytes: Optional[bytes] = None,
-        identity_name: str = "Unknown",
-        identity_known: bool = True,
-    ) -> dict[str, Any]:
-        """Holistic analysis. Returns a dict always containing `available`."""
-        text = _ANALYSIS_PROMPT.format(
-            identity=identity_name or "Unknown",
-            is_unknown=str(not identity_known),
-            prompt=prompt,
-        )
-        contents: list = []
-        img = self._image_part(image_bytes)
-        if img is not None:
-            contents.append(img)
-        contents.append(text)
-
-        raw = self._generate(contents)
+    def analyze(self, prompt: str) -> dict[str, Any]:
+        """Text-only analysis. Returns a dict always containing `available`."""
+        raw = self._generate([_ANALYSIS_PROMPT.format(prompt=prompt)])
         if raw is None:
             return {"available": False, "reason": self._init_error or "gemini_call_failed"}
 

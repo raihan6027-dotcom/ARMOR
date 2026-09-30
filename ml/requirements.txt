@@ -1,0 +1,2 @@
+# Dependensi evaluasi dan pelatihan (di luar backend).
+matplotlib==3.10.7

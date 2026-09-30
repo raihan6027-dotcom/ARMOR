@@ -7,7 +7,6 @@ class RiskRequest(BaseModel):
     identity_target: str
     intent: str
     prompt: Optional[str] = None
-    image: Optional[str] = None
 
 
 class RiskResponse(BaseModel):

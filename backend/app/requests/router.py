@@ -26,7 +26,6 @@ def create_request(
     result = decision_service.orchestrate(
         db,
         requester_user_id=current.user_id,
-        identity_id=payload.identity_id,
         prompt=payload.prompt,
         image_bytes=image_bytes,
         media_type=payload.media_type,

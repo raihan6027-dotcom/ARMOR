@@ -11,7 +11,8 @@ def _utcnow() -> datetime:
 
 
 class Request(Base):
-    """One orchestrated /requests evaluation and its final decision (history)."""
+    """One gateway evaluation and its final decision. Targets live in request_targets;
+    no media is ever stored."""
 
     __tablename__ = "requests"
 
@@ -19,21 +20,14 @@ class Request(Base):
     request_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
 
     requester_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
-    identity_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
 
     prompt: Mapped[str] = mapped_column(Text)
-
-    identity_verified: Mapped[bool | None] = mapped_column(default=None, nullable=True)
-    identity_target: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     intent: Mapped[str | None] = mapped_column(String(32), nullable=True)
     intent_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     risk_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
     risk_level: Mapped[str | None] = mapped_column(String(16), nullable=True)
-
-    consent_status: Mapped[str | None] = mapped_column(String(16), nullable=True)
-    permission: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
     decision: Mapped[str] = mapped_column(String(16))  # ALLOW | REVIEW | DENY
     reason_code: Mapped[str | None] = mapped_column(String(64), nullable=True)

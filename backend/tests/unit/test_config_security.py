@@ -6,11 +6,23 @@ def test_dev_allows_default_secret():
 
 
 def test_production_rejects_default_secret_and_wildcard_cors():
-    s = Settings(app_env="production", jwt_secret="change-me-in-production", cors_origins="*")
+    s = Settings(
+        app_env="production",
+        jwt_secret="change-me-in-production",
+        cors_origins="*",
+        armor_embedding_key="",
+        bcrypt_rounds=4,
+    )
     problems = s.insecure_settings()
-    assert len(problems) == 2
+    assert len(problems) == 4
 
 
 def test_production_accepts_strong_secret_and_explicit_origin():
-    s = Settings(app_env="production", jwt_secret="x" * 48, cors_origins="https://armor.example")
+    s = Settings(
+        app_env="production",
+        jwt_secret="x" * 48,
+        cors_origins="https://armor.example",
+        armor_embedding_key="k",
+        bcrypt_rounds=12,
+    )
     assert s.insecure_settings() == []

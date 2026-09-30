@@ -1,13 +1,16 @@
 """Request orchestration: the ARMOR AI-safety gateway pipeline.
 
-identity -> intent (AI) -> risk (AI) -> per-target owner settings (lock,
-permission, consent) -> deterministic policy engine -> persisted decision.
-The AI supplies structured *information* only; the policy engine owns the verdict.
+media -> Face AI (every face) -> targets -> intent (AI) -> risk (AI) -> per-target
+owner settings (lock, permission, consent, trusted circle, guardian) ->
+deterministic policy engine -> persisted decision.
 
-The full decision (internal reason code, per-target detail, identity id, score)
-is stored for the identity owner and the audit log. The requester only ever
-receives the requester view produced by the policy engine, which looks the same
-whether or not another person in the media is registered.
+The AI supplies structured *information* only; the policy engine owns the verdict.
+The client never names who is in the media: targets come only from matching the
+media against opt-in enrollments (CLAUDE.md bagian 2).
+
+The full decision (internal reason code, per-target identity and score) is stored
+for the identity owner and audit. The requester only receives the requester view,
+which looks the same whether or not another person in the media is registered.
 """
 
 from __future__ import annotations
@@ -20,14 +23,16 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.ai.client import AIClient
+from app.ai.face import face_ai
 from app.core.logging import get_logger
 from app.models.request import Request
+from app.models.request_target import RequestTarget
 from app.policy.defaults import permission_media
 from app.policy.engine import PolicyInput, TargetInput, evaluate
 from app.schema.common import (
     IdentityTarget,
+    Intent,
     MediaType,
-    RiskLevel,
     TargetSource,
     normalize_intent,
     normalize_risk,
@@ -43,40 +48,57 @@ def _new_request_id() -> str:
 
 
 def public_target(target: IdentityTarget) -> str:
-    """Requester-facing target: never distinguishes registered from unregistered."""
+    """Requester-facing target: never distinguishes registered, unregistered or
+    gray-zone matches."""
     return "SELF" if target is IdentityTarget.SELF else "OTHER"
 
 
-def _build_target(
+def _owner_settings(
     db: Session,
-    ident: dict,
+    t: TargetInput,
+    identity,
     requester_user_id: str,
-    source: TargetSource,
     media_type: MediaType,
-    intent,
-) -> TargetInput:
-    identity = ident["identity"]
-    target_type: IdentityTarget = ident["target"]
-    t = TargetInput(
-        source=source,
-        target_type=target_type,
-        identity_id=identity.identity_id if identity is not None else None,
-        score=ident["score"],
+    intent: Intent,
+) -> None:
+    """Resolve lock, permission, consent and guardian flag for a registered target."""
+    t.guardian_child = bool(identity.is_child)
+    if t.target_type is not IdentityTarget.OTHER_REGISTERED:
+        return
+    media = permission_media(t.source, media_type)
+    t.lock_level = identity_service.lock_level(identity, media)
+    t.permission = permission_service.resolve(db, identity.identity_id, intent, media)
+    t.consent = consent_service.latest_status_for(
+        db, identity.identity_id, requester_user_id, intent.value, media.value
     )
-    if target_type is IdentityTarget.OTHER_REGISTERED:
-        media = permission_media(source, media_type)
-        t.lock_level = identity_service.lock_level(identity, media)
-        t.permission = permission_service.resolve(db, identity.identity_id, intent, media)
-        t.consent = consent_service.latest_status_for(
-            db, identity.identity_id, requester_user_id, intent.value, media.value
+
+
+def _face_targets(
+    db: Session, image_bytes: bytes, requester_user_id: str
+) -> tuple[list[tuple[TargetInput, object, bool]], bool]:
+    """Returns ([(target, identity, quality_ok)], face_ai_available)."""
+    faces = face_ai.analyze(image_bytes)
+    if faces is None:
+        return [], False
+    index = identity_service.registered_face_embeddings(db) if faces else []
+    out = []
+    for face in faces:
+        match = identity_service.classify_face(face, requester_user_id, index)
+        target = TargetInput(
+            source=TargetSource.FACE,
+            target_type=match.target,
+            identity_id=match.identity.identity_id if match.identity else None,
+            score=match.score,
         )
-    return t
+        out.append((target, match.identity, face.quality_ok))
+        # The embedding of an unregistered face is not kept anywhere.
+        face.embedding = None
+    return out, True
 
 
 def orchestrate(
     db: Session,
     requester_user_id: str,
-    identity_id: str,
     prompt: str,
     image_bytes: Optional[bytes] = None,
     media_type: Optional[MediaType] = None,
@@ -84,32 +106,36 @@ def orchestrate(
     started = time.perf_counter()
     if media_type is None:
         media_type = MediaType.IMAGE if image_bytes else MediaType.TEXT_ONLY
-    source = TargetSource.FACE if image_bytes else TargetSource.TEXT
     unavailable: list[str] = []
 
-    # 1. Identity: who is in the request.
-    ident = identity_service.determine_target(db, requester_user_id, identity_id, image_bytes)
-    if not ident["face_available"]:
-        unavailable.append("face")
+    # 1. Who is in the media (Face AI over every face).
+    found: list[tuple[TargetInput, object, bool]] = []
+    if image_bytes:
+        found, face_ok = _face_targets(db, image_bytes, requester_user_id)
+        if not face_ok:
+            unavailable.append("face")
 
-    # 2. Intent (AI).
-    intent_res = ai_client.analyze_intent(prompt, image_bytes=image_bytes)
+    # 2. Intent (AI) and 3. risk (AI): prompt only, never media, never consent.
+    intent_res = ai_client.analyze_intent(prompt)
     intent = normalize_intent(intent_res["intent"])
-
-    # 3. Risk (AI): content features only, never consent or permission.
+    worst_target = next(
+        (t.target_type.value for t, _, _ in found if t.target_type is not IdentityTarget.SELF),
+        IdentityTarget.SELF.value if found else "NONE",
+    )
     risk_res = ai_client.analyze_risk(
-        identity_target=ident["target"].value,
-        intent=intent.value,
-        prompt=prompt,
-        image_bytes=image_bytes,
+        identity_target=worst_target, intent=intent.value, prompt=prompt
     )
     risk_level = normalize_risk(risk_res.get("risk_level"))
 
-    # 4. Owner settings for the target, then the deterministic decision.
-    target = _build_target(db, ident, requester_user_id, source, media_type, intent)
+    # 4. Owner settings per registered target, then the deterministic decision.
+    targets = []
+    for t, identity, _ in found:
+        if identity is not None:
+            _owner_settings(db, t, identity, requester_user_id, media_type, intent)
+        targets.append(t)
     result = evaluate(
         PolicyInput(
-            targets=[target],
+            targets=targets,
             intent=intent,
             intent_confidence=intent_res.get("confidence"),
             risk_level=risk_level,
@@ -118,26 +144,20 @@ def orchestrate(
             prompt=prompt,
         )
     )
-
     elapsed_ms = int((time.perf_counter() - started) * 1000)
 
-    # 5. Persist the full decision (owner + audit view).
+    # 5. Persist the full decision (owner + audit view). No media is stored.
     request_id = _new_request_id()
     db.add(
         Request(
             request_id=request_id,
             requester_id=requester_user_id,
-            identity_id=target.identity_id,
             prompt=prompt,
             media_type=media_type.value,
-            identity_verified=ident["target"] is IdentityTarget.SELF,
-            identity_target=ident["target"].value,
             intent=result.effective_intent.value,
             intent_confidence=intent_res.get("confidence"),
             risk_score=risk_res.get("risk_score"),
             risk_level=risk_level.value if risk_level else None,
-            consent_status=target.consent.value,
-            permission=target.permission.value if target.permission else None,
             decision=result.decision.value,
             reason_code=result.reason_code,
             reason=result.reason,
@@ -148,12 +168,25 @@ def orchestrate(
             processing_ms=elapsed_ms,
         )
     )
+    for d in result.per_target_detail:
+        db.add(
+            RequestTarget(
+                request_id=request_id,
+                source=d.source.value,
+                target_type=d.target_type.value,
+                identity_id=d.identity_id,
+                score=d.score,
+                decision=d.decision.value,
+                reason_code=d.reason_code,
+            )
+        )
     db.commit()
 
     logger.info(
-        "request_id=%s media=%s intent=%s risk=%s decision=%s reason=%s ms=%d",
+        "request_id=%s media=%s targets=%d intent=%s risk=%s decision=%s reason=%s ms=%d",
         request_id,
         media_type.value,
+        len(targets),
         result.effective_intent.value,
         risk_level.value if risk_level else None,
         result.decision.value,
@@ -162,10 +195,20 @@ def orchestrate(
     )
 
     # 6. Requester-safe response.
+    people = [
+        {"source": t.source.value, "target": public_target(t.target_type), "quality_ok": q}
+        for t, _, q in found
+    ]
+    if not people:
+        summary = "NONE"
+    elif all(p["target"] == "SELF" for p in people):
+        summary = "SELF"
+    else:
+        summary = "OTHER"
     return {
         "request_id": request_id,
         "media_type": media_type,
-        "identity": {"target": public_target(ident["target"])},
+        "identity": {"target": summary, "people": people},
         "intent": {
             "label": intent,
             "confidence": intent_res.get("confidence", 0.0),
@@ -173,7 +216,7 @@ def orchestrate(
         },
         "risk": {
             "score": risk_res.get("risk_score"),
-            "level": risk_level if risk_level in RiskLevel else None,
+            "level": risk_level,
             "ai_available": risk_res.get("available", False),
         },
         "decision": {
@@ -183,6 +226,7 @@ def orchestrate(
             "suggestion": result.suggestion,
             "label_required": result.label_required,
         },
+        "checks_unavailable": unavailable,
     }
 
 

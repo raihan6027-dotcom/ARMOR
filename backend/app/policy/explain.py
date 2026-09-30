@@ -158,6 +158,13 @@ def requester_view(
     When every target is the requester (or there is no person at all), nothing
     about a third party can leak, so the full reason is shown.
     """
+    # Fail-safe outcomes never depend on who is registered: same public code for all.
+    if reason_code in _FAIL_SAFE_CODES:
+        return RequesterView("CHECK_UNAVAILABLE", _PUBLIC_MESSAGES["CHECK_UNAVAILABLE"], None)
+    if reason_code == "INTENT_UNCERTAIN":
+        return RequesterView(
+            "INTENT_UNCLEAR", _PUBLIC_MESSAGES["INTENT_UNCLEAR"], SUGGESTIONS["INTENT_UNCLEAR"]
+        )
     if only_self:
         suggestion = SUGGESTIONS.get(reason_code)
         return RequesterView(reason_code, reason_for(reason_code, prompt), suggestion)
@@ -171,12 +178,6 @@ def requester_view(
             "VOICE_CLONE_NOT_ALLOWED",
             _PUBLIC_MESSAGES["VOICE_CLONE_NOT_ALLOWED"],
             SUGGESTIONS["VOICE_CLONE_NO_CONSENT"],
-        )
-    if reason_code in _FAIL_SAFE_CODES:
-        return RequesterView("CHECK_UNAVAILABLE", _PUBLIC_MESSAGES["CHECK_UNAVAILABLE"], None)
-    if reason_code == "INTENT_UNCERTAIN":
-        return RequesterView(
-            "INTENT_UNCLEAR", _PUBLIC_MESSAGES["INTENT_UNCLEAR"], SUGGESTIONS["INTENT_UNCLEAR"]
         )
     if decision is Decision.ALLOW:
         return RequesterView("ALLOWED", _PUBLIC_MESSAGES["ALLOWED"], None)
