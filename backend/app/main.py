@@ -19,6 +19,7 @@ from app.owner.router import router as owner_router
 from app.permission.router import router as permission_router
 from app.requests.router import router as requests_router
 from app.risk.router import router as risk_router
+from app.shield.router import router as shield_router
 
 logger = get_logger("main")
 
@@ -57,6 +58,10 @@ TAGS = [
     {"name": "Permission", "description": "Izin per tujuan x media."},
     {"name": "Kasus", "description": "Banding, sengketa, dan konsol peninjau."},
     {"name": "Data saya", "description": "Unduh semua data milik sendiri."},
+    {
+        "name": "Shield",
+        "description": "Verifikasi publik: apakah sebuah gambar dibuat lewat ARMOR.",
+    },
 ]
 
 app = FastAPI(
@@ -91,6 +96,7 @@ for r in (
     me_router,
     owner_router,
     cases_router,
+    shield_router,
 ):
     app.include_router(r)
 

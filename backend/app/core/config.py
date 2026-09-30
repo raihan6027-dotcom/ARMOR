@@ -73,6 +73,20 @@ class Settings(BaseSettings):
     consent_requests_per_day: int = 3  # per requester per identity (CLAUDE.md bagian 9)
     gateway_requests_per_minute: int = 30  # per account (per API key from Fase 10e)
 
+    # --- Generator after ALLOW (Fase 8) ---
+    # mock (generator_mock service, default) | diffusers (local model, needs GPU and
+    # downloaded weights) | auto (diffusers when available, otherwise mock)
+    generator: str = "mock"
+    generator_url: str = "http://127.0.0.1:8200"
+    generator_timeout_s: float = 120.0
+    generator_model_dir: str = ""  # empty => <model_root>/generator/sd
+
+    # --- ARMOR Shield ---
+    # HMAC key for the manifest in shielded PNGs; empty => derived from JWT_SECRET.
+    shield_signing_key: str = ""
+    shield_phash_max_distance: int = 10  # of 64 bits
+    public_verify_per_minute: int = 20  # per client address
+
     # --- Retention ---
     log_retention_days: int = 90
 

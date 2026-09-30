@@ -20,6 +20,7 @@ view, which looks the same whether or not another person is registered.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 import uuid
@@ -324,6 +325,7 @@ def orchestrate(
             prompt=prompt,
             media_type=route.media_type.value,
             allow_training=allow_training,
+            input_sha256=_media_hash(image_bytes, video_bytes, audio_bytes),
             intent_original=intent.value,
             intent_confidence=intent_res.get("confidence"),
             risk_score=risk_res.get("risk_score"),
@@ -390,6 +392,14 @@ def orchestrate(
         "checks_unavailable": unavailable,
         "timing_ms": timer.ms,
     }
+
+
+def _media_hash(*media: Optional[bytes]) -> Optional[str]:
+    """SHA-256 of the checked media (never the media): generation must reuse it."""
+    for data in media:
+        if data:
+            return hashlib.sha256(data).hexdigest()
+    return None
 
 
 def _summary(people: list[dict]) -> str:

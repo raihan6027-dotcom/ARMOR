@@ -17,6 +17,7 @@ from app.models.consent import Consent
 from app.models.identity import Identity
 from app.models.permission import Permission
 from app.models.request import Request
+from app.models.shield import ShieldRecord
 from app.models.user import User
 
 RETENTION = {
@@ -26,6 +27,8 @@ RETENTION = {
     "photos_and_recordings": "Tidak disimpan. Hanya diproses di memori lalu dibuang.",
     "decision_log": "Log keputusan (tanpa media) disimpan 90 hari lalu dihapus otomatis.",
     "consent_records": "Selama identitas terdaftar, sebagai bukti persetujuan.",
+    "generated_outputs": "Hasil generator tidak disimpan. Hanya hash-nya di registri ARMOR Shield "
+    "agar keasliannya bisa diverifikasi.",
 }
 
 
@@ -118,9 +121,21 @@ def export(db: Session, user: User) -> dict:
                 "media_type": r.media_type,
                 "decision": r.decision,
                 "reason_code": r.requester_code,
+                "output_status": r.output_status,
                 "created_at": _iso(r.created_at),
             }
             for r in db.query(Request).filter(Request.requester_id == user.user_id).all()
+        ],
+        "shield_records": [
+            {
+                "shield_id": s.shield_id,
+                "request_id": s.request_id,
+                "permission_status": s.permission_status,
+                "generator": s.generator,
+                "simulated": s.simulated,
+                "created_at": _iso(s.created_at),
+            }
+            for s in db.query(ShieldRecord).filter(ShieldRecord.requester_id == user.user_id).all()
         ],
         "cases_reported": [
             {

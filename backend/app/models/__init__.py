@@ -11,6 +11,7 @@ from app.models.owner import Block, CircleMember
 from app.models.permission import Permission
 from app.models.request import Request
 from app.models.request_target import RequestTarget
+from app.models.shield import ShieldRecord
 from app.models.user import User
 
 __all__ = [
@@ -27,5 +28,6 @@ __all__ = [
     "Permission",
     "Request",
     "RequestTarget",
+    "ShieldRecord",
     "User",
 ]

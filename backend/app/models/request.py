@@ -47,6 +47,12 @@ class Request(Base):
     # JSON {stage: milliseconds}.
     stage_ms: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # SHA-256 of the checked media (never the media itself): generation after ALLOW
+    # must be given the very same media, so a harmless photo cannot be swapped in.
+    input_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # None until generation; DELIVERED | HELD (Output Guard).
+    output_status: Mapped[str | None] = mapped_column(String(16), nullable=True)
+
     processing_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now, index=True)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

@@ -23,5 +23,9 @@ python-jose[cryptography]==3.5.0
 numpy==2.2.6
 pillow==12.3.0
 
+# --- ARMOR Shield (perceptual hash) dan klien generator ---
+ImageHash==4.3.2
+httpx==0.28.1
+
 # --- Model lokal ringan (Intent AI, Risk AI) ---
 scikit-learn==1.7.2

@@ -3,7 +3,9 @@ model-free environment BEFORE the app is imported. Every test runs fully offline
 the face model is replaced by the synthetic camera in tests/synthetic.py."""
 
 import os
+import sys
 import tempfile
+from pathlib import Path
 
 from cryptography.fernet import Fernet
 
@@ -18,12 +20,20 @@ os.environ["JWT_SECRET"] = "test-secret"
 os.environ["MODEL_DIR"] = _TMP_MODEL_DIR  # empty => no real model is ever loaded
 os.environ["ARMOR_EMBEDDING_KEY"] = Fernet.generate_key().decode()
 os.environ["BCRYPT_ROUNDS"] = "4"  # fast hashing in tests only
+os.environ["GENERATOR"] = "mock"
+os.environ.pop("GENERATOR_TEST_MODE", None)
+
+# The simulated generator (generator_mock/) runs in-process through a TestClient.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "generator_mock"))
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from app.ai.face import face_ai  # noqa: E402
+from app.core.ratelimit import limiter  # noqa: E402
 from app.db.database import Base, engine  # noqa: E402
+from app.generation import set_generator  # noqa: E402
+from app.generation.mock_adapter import MockGeneratorAdapter  # noqa: E402
 from app.main import app  # noqa: E402
 from tests import synthetic  # noqa: E402
 
@@ -43,6 +53,19 @@ def _fresh_db():
 def _synthetic_camera(monkeypatch):
     """Replace the face model with the synthetic camera for every test."""
     monkeypatch.setattr(face_ai, "analyze", synthetic.analyze)
+
+
+@pytest.fixture(autouse=True)
+def _mock_generator():
+    """Every test generates through the real generator_mock app, in-process."""
+    from armor_generator_mock.service import app as generator_app
+
+    set_generator(
+        MockGeneratorAdapter("http://generator", 5, client=TestClient(generator_app))
+    )
+    yield
+    set_generator(None)
+    limiter.reset()
 
 
 @pytest.fixture()

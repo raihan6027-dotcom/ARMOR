@@ -13,7 +13,8 @@ from app.schema.request import (
     RequestDetail,
     RequestHistoryResponse,
 )
-from app.services import decision_service
+from app.schema.shield import GenerateRequest, GenerateResponse
+from app.services import decision_service, generation_service
 
 router = APIRouter(prefix="/requests", tags=["Requests"])
 
@@ -65,3 +66,18 @@ def get_request(
 ):
     """Status terbaru satu permintaan milik sendiri (misalnya setelah persetujuan dijawab)."""
     return RequestDetail(**decision_service.get_own(db, request_id, current.user_id))
+
+
+@router.post("/{request_id}/generate", response_model=GenerateResponse)
+def generate(
+    request_id: str,
+    payload: GenerateRequest,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+):
+    """Setelah ALLOW: buat konten lewat generator, periksa ulang hasilnya dengan Output
+    Guard, lalu pasang ARMOR Shield (label AI, metadata, hash). Kirim ulang gambar yang
+    sama persis dengan yang diperiksa (media tidak disimpan). Jika hasil memuat wajah
+    terdaftar yang tidak diizinkan, hasil ditahan (HELD) dan pemiliknya diberi tahu."""
+    image = read_upload(payload.image, "image", "image") if payload.image else None
+    return GenerateResponse(**generation_service.generate(db, request_id, current.user_id, image))

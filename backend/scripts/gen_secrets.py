@@ -1,4 +1,4 @@
-"""Hasilkan rahasia baru untuk .env: JWT_SECRET dan ARMOR_EMBEDDING_KEY.
+"""Hasilkan rahasia baru untuk .env: JWT_SECRET, ARMOR_EMBEDDING_KEY, SHIELD_SIGNING_KEY.
 
 Pemakaian:
     python scripts/gen_secrets.py            # cetak ke layar
@@ -24,6 +24,7 @@ def generate() -> dict[str, str]:
     return {
         "JWT_SECRET": secrets.token_urlsafe(48),
         "ARMOR_EMBEDDING_KEY": Fernet.generate_key().decode(),
+        "SHIELD_SIGNING_KEY": secrets.token_urlsafe(48),
     }
 
 

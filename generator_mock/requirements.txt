@@ -1,0 +1,7 @@
+# Generator tiruan: tidak butuh model atau GPU.
+fastapi==0.115.14
+uvicorn[standard]==0.52.4
+pillow==12.3.0
+# Tes
+pytest==9.1.1
+httpx==0.28.1
