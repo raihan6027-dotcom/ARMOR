@@ -12,7 +12,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | 2 | Selesai | `2f03f1c` |
 | 3 | Selesai | `6c1cef7` |
 | 4 | Selesai | `f8b16bb` |
-| 5 | Belum | |
+| 5 | Selesai | (lihat log di bawah) |
 | 6 | Belum | |
 | 6b | Belum | |
 | 7 | Belum | |
@@ -37,6 +37,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | Tinggi | Ganti ambang placeholder wajah dengan hasil evaluasi | Keputusan wajah yang terukur | Salin `FACE_MATCH_THRESHOLD` dan `FACE_GRAY_MARGIN` dari `docs/eval/face.md` ke `backend/.env`. |
 | Tinggi | Periksa dataset Intent AI (3.500 prompt + 90 parafrase) | Angka Intent AI Bab 7 yang sah (saat ini EKSPERIMEN) | Ikuti `docs/intent-labeling-guide.md`: buka `ml/intent/dataset/intent_dataset.csv` dan `paraphrase.csv`, periksa label, perbaiki kalimat janggal, isi `diperiksa_oleh`. Lalu `python ml/intent/dataset/generate.py --check`, `python ml/intent/train_baseline.py`, `python ml/intent/select_model.py`. |
 | Tinggi | Tambah prompt alami tulisan tim, terutama eufemisme kelas berbahaya | Tingkat lolos parafrase (saat ini 18,4%) | Tambahkan baris `sumber=manual`, `split=train`/`val`, id `MAN-xxxxx` ke `intent_dataset.csv` (lihat `ml/intent/README.md`). Jangan menyalin dari `paraphrase.csv` dan jangan menambah `split=test`. |
+| Tinggi | Anotasi risiko oleh dua anotator terpisah | Model Risk AI asli dan angka Bab 7 (macro F1, kappa) | Ikuti `docs/risk-annotation-guide.md`: dua orang mengisi `ml/risk/annotations/anotator_A.csv` dan `anotator_B.csv` tanpa saling melihat (minimal 300 skenario), jalankan `python ml/risk/kappa.py`, bahas `ml/risk/data/disagreements.csv`, lalu `python ml/risk/train.py`. |
 | Sedang | Latih IndoBERT di GPU | Perbandingan Intent AI Bab 7 | Buka Colab/Kaggle dengan GPU, jalankan langkah di docstring `ml/intent/train_indobert.py`, unduh `ml/models/intent/indobert/` dan `indobert_report.json` ke laptop, lalu `python ml/intent/select_model.py`. Cek dan catat lisensi checkpoint di `docs/TECH_LIST.md`. |
 | Sedang | Tinjau teks persetujuan lapis 1 | Enrollment wajah dan suara | Baca `docs/consent-text/face-v1.md` dan `voice-v1.md`; jika diubah, buat versi baru (misalnya `face-v2.md`) dan naikkan `CONSENT_TEXT_FACE`. |
 | Sedang | Sambungkan repo ke GitHub (privat) agar CI jalan | CI, kerja paralel 4 anggota | Buat repo privat kosong di GitHub, lalu di `E:\armor`: `git remote add origin <url>` dan `git push -u origin main`. |
@@ -78,3 +79,10 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 - **Hasil tes:** backend 254 lulus, 1 dilewati, 0 gagal; `ml/` 15 lulus; ruff bersih.
 - **Hasil eksperimen (bukan final):** set uji template macro F1 1,000 (menghafal template, tidak bermakna); set parafrase macro F1 0,485, recall berbahaya 0,358, tingkat lolos 0,184.
 - **Perlu diperiksa manusia:** pemeriksaan dataset; kualitas kalimat template bahasa Inggris; keputusan bahwa pemilihan model memprioritaskan tingkat lolos di set parafrase. File model `.joblib` tidak di-commit: jalankan `python ml/intent/train_baseline.py --allow-unreviewed` (atau tanpa flag setelah diperiksa) di laptop demo agar backend memakai model, bukan fallback.
+
+### Fase 5: Risk AI
+
+- **Commit:** (lihat tabel status)
+- **Ringkasan:** Risk AI menilai isi konten saja (intent, keyakinan, jenis target, media, realisme, manipulasi, konteks sensitif, suara sintetis); consent dan izin bukan fitur. Realisme, manipulasi, dan konteks sensitif diekstrak dari prompt dengan aturan kata kunci terdokumentasi dan teruji. Generator 600 skenario dan lembar anotasi dua anotator siap, beserta skrip Cohen's kappa dan penggabungan label. Training membandingkan Logistic Regression dan Random Forest dengan validasi silang dan memilih berdasarkan macro F1. Backend menghitung skor 0-100 dari probabilitas berbobot, level, dan tiga fitur paling berpengaruh; tanpa model hasil anotasi manusia dipakai tabel per intent. Realisme kini mengaktifkan aturan satire fotorealistik di policy. Gemini dihapus seluruhnya.
+- **Hasil tes:** backend 292 lulus, 1 dilewati, 0 gagal; `ml/` 20 lulus; ruff bersih.
+- **Perlu diperiksa manusia:** panduan anotasi dan kata kunci fitur. Backend memakai tabel fallback risiko sampai anotasi selesai.

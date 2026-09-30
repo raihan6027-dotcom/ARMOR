@@ -62,3 +62,7 @@ ml/risk/annotations/raw/
 # --- Lain-lain ---
 .DS_Store
 Thumbs.db
+
+# Uji jalan sintetis (dibuat ulang oleh train.py --synthetic)
+ml/risk/synthetic/
+ml/models/**/synthetic/

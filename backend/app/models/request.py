@@ -40,6 +40,8 @@ class Request(Base):
     # JSON list of per-target results: for the identity owner and audit only.
     per_target_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # JSON: Risk AI input features and the top contributing features.
+    risk_features: Mapped[str | None] = mapped_column(Text, nullable=True)
     # JSON {component: version} of every model that informed this decision.
     model_version: Mapped[str | None] = mapped_column(Text, nullable=True)
 

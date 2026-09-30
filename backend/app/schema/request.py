@@ -39,6 +39,8 @@ class RiskBlock(BaseModel):
     score: Optional[int] = None
     level: Optional[RiskLevel] = None
     ai_available: bool
+    # Content features that raised the score most (never who is registered).
+    top_features: list[dict] = []
 
 
 class DecisionBlock(BaseModel):

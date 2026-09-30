@@ -6,5 +6,5 @@ extend = "../backend/pyproject.toml"
 # Markdown report writers.
 "**/select_model.py" = ["E501"]
 # Seeded RNG for reproducible datasets and experiments, not for security.
-"**/*.py" = ["S311", "S603", "T201"]
+"**/*.py" = ["S311", "S603", "T201", "E501"]  # report text lines are long
 "**/test_*.py" = ["S101", "E501"]

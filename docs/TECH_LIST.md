@@ -30,7 +30,7 @@ Setiap dependensi baru wajib dicatat di sini beserta lisensi dan kegunaannya (CL
 | OpenCV (headless) | Apache-2.0 | Pra-proses gambar, ambil frame video | Dipakai |
 | pandas | BSD-3 | Olah data evaluasi | Rencana Fase 4-5 |
 | matplotlib | Lisensi matplotlib (berbasis PSF, BSD-compatible) | Kurva ROC dan grafik evaluasi di `ml/` | Dipakai (Fase 3, `ml/face_eval`) |
-| scikit-learn 1.7.2 | BSD-3 | Intent AI (TF-IDF kata + karakter + Logistic Regression), Risk AI (LR + RF) | Dipakai (Intent Fase 4, `backend/app/ai/intent.py`, `ml/intent/`) |
+| scikit-learn 1.7.2 | BSD-3 | Intent AI (TF-IDF kata + karakter + Logistic Regression), Risk AI (Logistic Regression vs Random Forest) | Dipakai (Fase 4-5, `backend/app/ai/intent.py`, `risk.py`, `ml/intent/`, `ml/risk/`) |
 | joblib | BSD-3 | Menyimpan dan memuat model scikit-learn lokal | Dipakai (Fase 4) |
 | SpeechBrain `spkrec-ecapa-voxceleb` | Apache-2.0 | Embedding suara | Rencana Fase 10b |
 | Whisper (small/base) | MIT | Transkrip suara offline | Rencana Fase 10b |
@@ -45,7 +45,7 @@ Setiap dependensi baru wajib dicatat di sini beserta lisensi dan kegunaannya (CL
 
 | Teknologi | Alasan dihapus | Fase |
 | --- | --- | --- |
-| google-genai (Gemini) | CLAUDE.md bagian 12: tidak boleh ada panggilan API AI pihak ketiga di jalur utama | Fase 3: tidak lagi menerima gambar atau pertanyaan identitas (selesai). Fase 4-5: dihapus dari intent dan risk |
+| google-genai (Gemini) | CLAUDE.md bagian 12: tidak boleh ada panggilan API AI pihak ketiga di jalur utama | Dihapus seluruhnya di Fase 5 (identifikasi di Fase 3, intent di Fase 4, risk di Fase 5) |
 | `official_face_registry.pkl` (galeri 6.114 wajah tokoh) | Data biometrik tanpa persetujuan | Dihapus di Fase 3 |
 
 ## Frontend (rencana Fase 7)

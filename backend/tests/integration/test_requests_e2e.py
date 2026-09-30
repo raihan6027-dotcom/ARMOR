@@ -153,3 +153,22 @@ def test_history_records_requests(client, auth):
 def test_requests_require_auth(client):
     r = client.post("/requests", json={"prompt": "hi"})
     assert r.status_code == 401
+
+
+def test_photorealistic_satire_of_other_is_denied(client, people):
+    # Realism now comes from the Risk AI features (Fase 5) into the policy satire rule.
+    r = ask(client, people["A"], "Buat parodi fotorealistik orang ini.", face("citra"))
+    assert r["decision"]["action"] == "DENY"
+    assert r["decision"]["reason_code"] == "SATIRE_REALISTIC"
+    cartoon = ask(client, people["A"], "Buat parodi kartun orang ini.", face("citra"))
+    assert cartoon["decision"]["action"] == "ALLOW"
+
+
+def test_risk_explanation_never_mentions_target_type(client, people):
+    r = ask(client, people["A"], "Buat iklan fotorealistik dengan wajah ini.", face("sinta"))
+    assert all(f["feature"] != "target_type" for f in r["risk"]["top_features"])
+    with SessionLocal() as db:
+        row = db.query(Request).filter_by(request_id=r["request_id"]).one()
+        stored = __import__("json").loads(row.risk_features)
+        assert stored["features"]["target_type"] == "OTHER_REGISTERED"
+        assert "consent" not in row.risk_features

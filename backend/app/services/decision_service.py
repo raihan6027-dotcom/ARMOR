@@ -97,6 +97,27 @@ def _face_targets(
     return out, True
 
 
+_TARGET_PRIORITY = (
+    IdentityTarget.OTHER_REGISTERED,
+    IdentityTarget.OTHER_UNREGISTERED,
+    IdentityTarget.UNCLEAR,
+    IdentityTarget.SELF,
+)
+
+
+def _worst_target(types: list[IdentityTarget]) -> str:
+    """The most exposed person in the request, as a Risk AI feature."""
+    for candidate in _TARGET_PRIORITY:
+        if candidate in types:
+            return candidate.value
+    return "NONE"
+
+
+def _public_factors(top: list[dict]) -> list[dict]:
+    """Risk explanation for the requester, minus anything about who is registered."""
+    return [f for f in top if f["feature"] != "target_type"]
+
+
 def orchestrate(
     db: Session,
     requester_user_id: str,
@@ -116,16 +137,18 @@ def orchestrate(
         if not face_ok:
             unavailable.append("face")
 
-    # 2. Intent (AI) and 3. risk (AI): prompt only, never media, never consent.
+    # 2. Intent (AI) and 3. risk (AI): prompt and content features only, never
+    #    media bytes, never consent or permission.
     intent_res = ai_client.analyze_intent(prompt)
     intent = normalize_intent(intent_res["intent"])
-    worst_target = next(
-        (t.target_type.value for t, _, _ in found if t.target_type is not IdentityTarget.SELF),
-        IdentityTarget.SELF.value if found else "NONE",
+    features = ai_client.risk_features(
+        prompt,
+        intent.value,
+        intent_res.get("confidence", 0.0),
+        _worst_target([t.target_type for t, _, _ in found]),
+        media_type.value,
     )
-    risk_res = ai_client.analyze_risk(
-        identity_target=worst_target, intent=intent.value, prompt=prompt
-    )
+    risk_res = ai_client.analyze_risk(features)
     risk_level = normalize_risk(risk_res.get("risk_level"))
 
     # 4. Owner settings per registered target, then the deterministic decision.
@@ -141,6 +164,7 @@ def orchestrate(
             intent_confidence=intent_res.get("confidence"),
             risk_level=risk_level,
             media_type=media_type,
+            realism=features.realism,
             unavailable=tuple(unavailable),
             prompt=prompt,
         )
@@ -173,6 +197,9 @@ def orchestrate(
             requester_code=result.requester_code,
             requester_message=result.requester_message,
             per_target_detail=json.dumps([d.as_dict() for d in result.per_target_detail]),
+            risk_features=json.dumps(
+                {"features": features.as_dict(), "top": risk_res.get("top_features", [])}
+            ),
             model_version=json.dumps(versions, sort_keys=True),
             processing_ms=elapsed_ms,
         )
@@ -227,6 +254,7 @@ def orchestrate(
             "score": risk_res.get("risk_score"),
             "level": risk_level,
             "ai_available": risk_res.get("available", False),
+            "top_features": _public_factors(risk_res.get("top_features", [])),
         },
         "decision": {
             "action": result.decision,

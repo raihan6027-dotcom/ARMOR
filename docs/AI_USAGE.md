@@ -54,3 +54,11 @@ Alat: **Claude Code** (model Claude Opus 5.5, Anthropic), dijalankan oleh anggot
 - **Tidak dilakukan dengan sengaja:** template tidak disesuaikan dengan set parafrase (akan membocorkan set uji ketahanan). IndoBERT belum dilatih karena butuh GPU.
 - **Verifikasi otomatis:** 254 tes backend lulus (1 dilewati), 15 tes `ml/` lulus, ruff bersih.
 - **Perlu diverifikasi manusia:** pemeriksaan seluruh 3.590 baris dataset (kolom `diperiksa_oleh`), termasuk memperbaiki kalimat bahasa Inggris hasil template yang kurang wajar; penambahan prompt alami; menjalankan IndoBERT di Colab/Kaggle.
+
+## Fase 5: Risk AI
+
+- **Dikerjakan dengan Claude Code:** fitur konten Risk AI dan aturan kata kunci terdokumentasi untuk realism, manipulation, dan sensitive_context (`backend/app/ai/risk_features.py`, dipakai bersama oleh training dan backend); generator 600 skenario realistis dengan deskripsi bahasa Indonesia dan lembar anotasi dua anotator (`ml/risk/scenarios.py`); Cohen's kappa biasa dan berbobot kuadratik serta penggabungan label sepakat dan hasil diskusi (`ml/risk/kappa.py`); training Logistic Regression vs Random Forest dengan validasi silang berstrata dan grafik importance (`ml/risk/train.py`); `backend/app/ai/risk.py` dengan skor 0-100 dari probabilitas berbobot, level sesuai ambang CLAUDE.md, tiga fitur paling berpengaruh (ablasi), dan fallback tabel per intent; panduan anotasi (`docs/risk-annotation-guide.md`). Fitur realisme kini masuk ke aturan satire di policy engine. Gemini dan paket `google-genai` dihapus seluruhnya dari backend.
+- **Pengaman:** backend menolak memuat model Risk AI yang dilatih dari anotasi SINTETIS atau yang susunan fiturnya berbeda. Consent dan izin tidak pernah menjadi fitur (ada tesnya). Faktor risiko yang ditampilkan ke requester tidak memuat jenis target.
+- **Data sintetis:** pipeline diuji jalan dengan dua anotator SINTETIS (aturan + derau); hasilnya di `docs/eval/synthetic/risk-smoke.md` bertanda SINTETIS. `docs/eval/risk.md` berstatus "belum dijalankan: data belum tersedia".
+- **Verifikasi otomatis:** backend 292 tes lulus (1 dilewati), `ml/` 20 tes lulus, ruff bersih.
+- **Perlu diverifikasi manusia:** panduan anotasi (definisi dan aturan bantu tingkat risiko), daftar kata kunci fitur, dan pelaksanaan anotasi oleh dua orang.

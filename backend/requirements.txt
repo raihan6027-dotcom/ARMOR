@@ -2,8 +2,6 @@
 -r requirements-core.txt
 -r requirements-ml.txt
 
-# --- Warisan: dihapus di Fase 3-5 (CLAUDE.md bagian 12, Gemini tidak dipakai) ---
-google-genai==2.25.0
 
 # --- Tes ---
 pytest==9.1.1
