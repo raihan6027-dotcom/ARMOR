@@ -1,0 +1,104 @@
+.kinds {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.kind {
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 17px;
+  cursor: pointer;
+  clip-path: polygon(
+    var(--chamfer) 0,
+    100% 0,
+    100% calc(100% - var(--chamfer)),
+    calc(100% - var(--chamfer)) 100%,
+    0 100%,
+    0 var(--chamfer)
+  );
+}
+
+.kind svg {
+  color: var(--accent);
+}
+
+.kind:hover,
+.kind[aria-checked="true"] {
+  border-color: var(--accent);
+}
+
+.upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.upload:focus-within {
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 2px;
+}
+
+.uploadEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 700;
+  padding: 20px;
+  text-align: center;
+}
+
+.uploadEmpty svg {
+  color: var(--accent);
+}
+
+.preview {
+  width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+}
+
+.fileName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.examples {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shieldLabel {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(6, 20, 42, 0.8);
+  border: 1px solid var(--allow);
+  color: var(--allow);
+  font-size: 13px;
+  font-weight: 700;
+}

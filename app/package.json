@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "gen:api": "openapi-typescript src/lib/api/openapi.json -o src/lib/api/schema.d.ts"
+    "gen:api": "openapi-typescript src/lib/api/openapi.json -o src/lib/api/schema.d.ts",
+    "sync:consent": "node scripts/sync-consent.mjs",
+    "predev": "node scripts/sync-consent.mjs",
+    "prebuild": "node scripts/sync-consent.mjs"
   },
   "dependencies": {
     "next": "16.3.7",

@@ -75,6 +75,13 @@ export const MEDIA_LABEL: Record<string, string> = {
   TEXT_ONLY: "Teks saja",
 };
 
+export const RISK_LABEL: Record<string, string> = {
+  LOW: "rendah",
+  MEDIUM: "sedang",
+  HIGH: "tinggi",
+  CRITICAL: "sangat tinggi",
+};
+
 export function formatDate(iso?: string | null): string {
   if (!iso) return "";
   const d = new Date(iso.endsWith("Z") || iso.includes("+") ? iso : `${iso}Z`);
