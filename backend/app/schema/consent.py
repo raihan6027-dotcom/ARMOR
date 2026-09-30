@@ -2,13 +2,14 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from app.schema.common import ConsentStatus
+from app.schema.common import BiometricMedia, ConsentStatus, Intent
 
 
 class ConsentRequest(BaseModel):
     identity_id: str
     request_id: Optional[str] = None
-    intent: Optional[str] = None
+    intent: Optional[Intent] = None
+    media: Optional[BiometricMedia] = None
 
 
 class ConsentRequestResponse(BaseModel):

@@ -34,7 +34,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S", "E501"]
+"tests/**" = ["S", "E501", "C408"]
 "scripts/**" = ["T201"]
 
 [tool.ruff.lint.isort]

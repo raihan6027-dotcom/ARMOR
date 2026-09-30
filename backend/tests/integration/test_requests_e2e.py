@@ -54,7 +54,7 @@ def test_scenario_b_other_commercial_review(client, auth):
     body = r.json()
     assert body["identity"]["target"] == "OTHER"
     assert body["intent"]["label"] == "COMMERCIAL_USE"
-    assert body["risk"]["level"] in ("HIGH", "CRITICAL")
+    assert body["risk"]["level"] == "MEDIUM"  # Fase 2 fallback, see test_intent_risk
     assert body["decision"]["action"] == "REVIEW"
 
 
@@ -91,3 +91,81 @@ def test_history_records_requests(client, auth):
 def test_requests_require_auth(client):
     r = client.post("/requests", json={"identity_id": "X", "prompt": "hi"})
     assert r.status_code == 401
+
+
+def _enroll(client, headers, identity_id):
+    client.post(
+        "/identity/enroll", json={"identity_id": identity_id, "image": IMG_B64}, headers=headers
+    )
+
+
+AD = {"identity_id": "ARMOR-B", "prompt": "Buat iklan produk kopi dengan wajah orang ini."}
+
+
+def test_consent_scope_turns_review_into_allow(client, make_user):
+    # Lampiran A skenario 4 on the pre-Fase-3 gateway: A asks to use the face of B
+    # in an ad -> REVIEW; B approves (scope COMMERCIAL_USE x FACE) -> ALLOW.
+    b_h, _ = make_user("b@example.com")
+    a_h, _ = make_user("a@example.com")
+    _enroll(client, b_h, "ARMOR-B")
+
+    assert client.post("/requests", json=AD, headers=a_h).json()["decision"]["action"] == "REVIEW"
+    cid = client.post(
+        "/consent/request",
+        json={"identity_id": "ARMOR-B", "intent": "COMMERCIAL_USE", "media": "FACE"},
+        headers=a_h,
+    ).json()["consent_id"]
+    client.post("/consent/respond", json={"consent_id": cid, "decision": "APPROVED"}, headers=b_h)
+    assert client.post("/requests", json=AD, headers=a_h).json()["decision"]["action"] == "ALLOW"
+
+    # Consent for one purpose does not carry over to another.
+    politics = {"identity_id": "ARMOR-B", "prompt": "Buat poster kampanye pemilu orang ini."}
+    r = client.post("/requests", json=politics, headers=a_h).json()
+    assert r["decision"]["action"] == "REVIEW"
+
+
+def test_consent_denied_turns_review_into_deny(client, make_user):
+    # Lampiran A skenario 5.
+    b_h, _ = make_user("b@example.com")
+    a_h, _ = make_user("a@example.com")
+    _enroll(client, b_h, "ARMOR-B")
+    cid = client.post(
+        "/consent/request",
+        json={"identity_id": "ARMOR-B", "intent": "COMMERCIAL_USE"},
+        headers=a_h,
+    ).json()["consent_id"]
+    client.post("/consent/respond", json={"consent_id": cid, "decision": "DENIED"}, headers=b_h)
+    r = client.post("/requests", json=AD, headers=a_h).json()
+    assert r["decision"]["action"] == "DENY"
+    assert r["decision"]["reason_code"] == "NOT_PERMITTED"  # uniform: no "consent denied"
+
+
+def test_requester_gets_safe_prompt_suggestion_on_deny(client, auth):
+    # Lampiran A skenario 6.
+    headers, _ = auth
+    r = client.post(
+        "/requests",
+        json={
+            "identity_id": "SOMEONE",
+            "prompt": "Buat orang ini memakai baju tahanan dan diborgol.",
+        },
+        headers=headers,
+    ).json()
+    assert r["decision"]["action"] == "DENY"
+    assert r["decision"]["reason_code"] == "HARMFUL_DEFAMATION"
+    assert "tahanan" in r["decision"]["reason"]
+    assert r["decision"]["suggestion"] == "Buat karikatur superhero dari foto ini."
+
+
+def test_lock_commercial_political_blocks_ads_but_not_edits(client, make_user):
+    b_h, _ = make_user("b@example.com")
+    a_h, _ = make_user("a@example.com")
+    _enroll(client, b_h, "ARMOR-B")
+    client.post(
+        "/identity/lock",
+        json={"identity_id": "ARMOR-B", "level": "COMMERCIAL_POLITICAL", "media": "FACE"},
+        headers=b_h,
+    )
+    assert client.post("/requests", json=AD, headers=a_h).json()["decision"]["action"] == "DENY"
+    edit = {"identity_id": "ARMOR-B", "prompt": "Edit ringan, perbaiki pencahayaan foto ini."}
+    assert client.post("/requests", json=edit, headers=a_h).json()["decision"]["action"] == "ALLOW"

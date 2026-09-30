@@ -2,19 +2,21 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from app.schema.common import Decision, Intent, RiskLevel
+from app.schema.common import Decision, Intent, MediaType, RiskLevel
 
 
 class RequestCreate(BaseModel):
     identity_id: str
     prompt: str
     image: Optional[str] = None  # base64-encoded image (optional context for the AI)
+    # Defaults to IMAGE when an image is attached, TEXT_ONLY otherwise.
+    media_type: Optional[MediaType] = None
 
 
 # --- Structured sub-blocks of the decision response ---
 class IdentityBlock(BaseModel):
-    """Requester-safe: only whether the media is the requester (SELF) or someone
-    else. Never the target identity id, match score, or verification flag."""
+    """Requester-safe: SELF when the media is the requester, OTHER otherwise.
+    Never the target identity id, whether it is registered, or a match score."""
 
     target: str
 
@@ -33,12 +35,16 @@ class RiskBlock(BaseModel):
 
 class DecisionBlock(BaseModel):
     action: Decision
+    # Public code (e.g. ALLOWED, NEEDS_REVIEW, HARMFUL_DEFAMATION, NOT_PERMITTED).
     reason_code: str
     reason: str
+    suggestion: Optional[str] = None
+    label_required: bool = False
 
 
 class RequestDecisionResponse(BaseModel):
     request_id: str
+    media_type: MediaType
     identity: IdentityBlock
     intent: IntentBlock
     risk: RiskBlock

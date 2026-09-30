@@ -9,7 +9,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | Awal | Selesai | `2ec74d9` |
 | 0 | Selesai | `3649ac6` |
 | 1 | Selesai | `78287e1` |
-| 2 | Belum | |
+| 2 | Selesai | (lihat log di bawah) |
 | 3 | Belum | |
 | 4 | Belum | |
 | 5 | Belum | |
@@ -49,3 +49,10 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 - **Ringkasan:** Sepuluh celah yang terbukti (ditambah 9b: mengunci identitas orang lain) kini punya tes regresi di `backend/tests/security/test_fase1_security.py` yang gagal pada kode lama dan lulus sesudahnya. Perbaikan: kepemilikan dicek pada enroll, verify, profile, lock, dan permission; consent wajib login, requester diambil dari token, hanya pemilik yang menjawab; policy menerapkan Identity Lock; riwayat dan log hanya milik sendiri; semua ID memakai UUID; respons ke requester tidak lagi membocorkan identitas target, skor, izin, atau consent, dengan pesan seragam. Server juga menolak menyala di produksi dengan rahasia bawaan atau CORS `*`. Tabel sebelum vs sesudah ada di `docs/eval/security-fase1.md`.
 - **Hasil tes:** 61 lulus, 0 gagal (46 lama, 12 keamanan, 3 config). Ruff bersih.
 - **Perlu diperiksa manusia:** tabel Bab 7.2; tiga tes lama yang disesuaikan karena mengukuhkan celah (dicatat di `docs/AI_USAGE.md`).
+
+### Fase 2: model domain dan policy engine multimodal
+
+- **Commit:** (lihat tabel status)
+- **Ringkasan:** Enum kanonik CLAUDE.md bagian 6 berlaku di seluruh backend. Policy engine ditulis ulang: menerima daftar target (sumber, jenis target, identitas, skor, Lock, consent, izin, lingkaran tepercaya, wali) beserta intent, risiko, jenis media, dan realisme; menerapkan aturan mutlak, gagal aman, dan matriks per target; lalu mengambil keputusan paling ketat. Keluarannya: keputusan, reason code, alasan bahasa Indonesia, saran prompt, pesan requester yang seragam, dan detail per target untuk pemilik dan audit. Izin disimpan per intent x media (bawaan wajah sesuai CLAUDE.md, suara bawaan DENY, empat intent berbahaya terkunci DENY). Lock diatur per media dengan tiga tingkat. Consent punya cakupan intent dan media. Gateway `/requests` dan `/decision` memakai engine baru. Selama fase ini ditemukan bahwa `backend/app/models/` tidak pernah ter-commit karena pola `.gitignore` lama; sudah diperbaiki.
+- **Hasil tes:** 185 lulus, 0 gagal. Cakupan `app/policy` 100% (baris dan cabang). Ruff bersih.
+- **Perlu diperiksa manusia:** (1) tafsiran bahwa izin ALLOW = consent tetap; (2) teks alasan dan saran prompt di `backend/app/policy/explain.py`; (3) commit `awal`, `fase-0`, dan `fase-1` tidak memuat `backend/app/models/*.py`, jadi checkout commit lama itu tidak bisa dijalankan; mulai commit Fase 2 lengkap; (4) skema basis data berubah: hapus `backend/armor.db` lokal sebelum menjalankan server (belum ada migrasi).

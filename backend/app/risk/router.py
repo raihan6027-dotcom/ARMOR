@@ -13,7 +13,6 @@ def _analyze(request: RiskRequest) -> RiskResponse:
     result = ai_client.analyze_risk(
         identity_target=request.identity_target,
         intent=request.intent,
-        consent=request.consent,
         prompt=request.prompt,
         image_bytes=image_bytes,
     )

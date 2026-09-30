@@ -22,7 +22,7 @@ from app.core.config import settings
 from app.core.exceptions import ArmorError, ForbiddenError, NotFoundError
 from app.core.logging import get_logger
 from app.models.identity import Identity
-from app.schema.common import IdentityTarget
+from app.schema.common import BiometricMedia, IdentityTarget, LockLevel
 
 logger = get_logger("identity_service")
 
@@ -143,45 +143,52 @@ def verify(db: Session, identity_id: str, image_bytes: bytes) -> dict:
     }
 
 
-def determine_target(
-    db: Session, requester_user_id: Optional[str], identity_id: str, image_bytes: Optional[bytes]
-) -> dict:
-    """For orchestration: classify SELF vs OTHER and whether the face is verified.
+def lock_level(identity: Identity, media: BiometricMedia) -> LockLevel:
+    raw = identity.face_lock if media is BiometricMedia.FACE else identity.voice_lock
+    try:
+        return LockLevel(raw)
+    except ValueError:
+        return LockLevel.ALL  # unreadable lock state fails closed
 
-    SELF requires that the identity is owned by the requesting user AND (when an
-    image is supplied) the face matches. Otherwise OTHER.
+
+def determine_target(
+    db: Session, requester_user_id: str, identity_id: str, image_bytes: Optional[bytes]
+) -> dict:
+    """Classify the single claimed identity of a request (pre-Fase 3 gateway).
+
+    SELF: the requester owns the identity (and, if an image is supplied, the face
+    matches). OTHER_REGISTERED: the identity exists and belongs to someone else.
+    OTHER_UNREGISTERED: no such identity. UNCLEAR: the requester claims their own
+    identity but the supplied face does not match it.
     """
-    identity = db.query(Identity).filter(Identity.identity_id == identity_id).first()
-    owned_by_requester = bool(
-        identity and requester_user_id and identity.user_id == requester_user_id
-    )
+    identity = _find(db, identity_id)
+    owned = identity is not None and identity.user_id == requester_user_id
 
     face_matches: Optional[bool] = None
     score: Optional[float] = None
-    ai_available = True
-    if image_bytes:
+    face_available = True
+    if image_bytes and identity is not None:
         result = verify(db, identity_id, image_bytes)
         face_matches = result["match"]
         score = result["confidence"]
-        ai_available = result["ai_available"]
+        face_available = result["ai_available"]
 
-    if owned_by_requester:
-        # The authenticated owner is acting on their own registered identity: this is
-        # a trusted SELF claim (account-level verification). A supplied face that does
-        # NOT match still downgrades verification.
-        target = IdentityTarget.SELF
-        verified = True if image_bytes is None else bool(face_matches)
+    if identity is None:
+        target = IdentityTarget.OTHER_UNREGISTERED
+    elif owned:
+        target = (
+            IdentityTarget.SELF
+            if image_bytes is None or face_matches or not face_available
+            else IdentityTarget.UNCLEAR
+        )
     else:
-        target = IdentityTarget.OTHER
-        verified = bool(face_matches)
+        target = IdentityTarget.OTHER_REGISTERED
 
     return {
-        "target": target.value,
-        "verified": verified,
-        "match_score": score,
-        "ai_available": ai_available,
-        "known": identity is not None,
-        "locked": bool(identity is not None and identity.status == "locked"),
+        "target": target,
+        "identity": identity,
+        "score": score,
+        "face_available": face_available,
     }
 
 
@@ -189,10 +196,22 @@ def get_profile(db: Session, identity_id: str, user_id: str) -> Identity:
     return get_owned(db, identity_id, user_id, hide_existence=True)
 
 
-def lock(db: Session, identity_id: str, user_id: str) -> Identity:
-    """Lock an identity the caller owns. Unregistered ids can no longer be claimed."""
+def lock(
+    db: Session,
+    identity_id: str,
+    user_id: str,
+    level: LockLevel = LockLevel.ALL,
+    media: Optional[BiometricMedia] = None,
+) -> Identity:
+    """Set the Lock level of an identity the caller owns, per media (None = both).
+    Unregistered ids can no longer be claimed."""
     identity = get_owned(db, identity_id, user_id, hide_existence=False)
-    identity.status = "locked"
+    if media in (None, BiometricMedia.FACE):
+        identity.face_lock = level.value
+    if media in (None, BiometricMedia.VOICE):
+        identity.voice_lock = level.value
+    unlocked = (identity.face_lock, identity.voice_lock) == (LockLevel.NONE.value,) * 2
+    identity.status = "active" if unlocked else "locked"
     db.commit()
     db.refresh(identity)
     return identity

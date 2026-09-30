@@ -80,3 +80,35 @@ def test_profile_and_lock(client, auth, face_model):
 def test_identity_requires_auth(client):
     r = client.post("/identity/verify", json={"identity_id": "X", "image": IMG_B64})
     assert r.status_code == 401
+
+
+def test_lock_level_per_media(client, auth, face_model):
+    headers, _ = auth
+    client.post(
+        "/identity/enroll", json={"identity_id": "ARMOR-L", "image": IMG_B64}, headers=headers
+    )
+    r = client.post(
+        "/identity/lock",
+        json={"identity_id": "ARMOR-L", "level": "COMMERCIAL_POLITICAL", "media": "FACE"},
+        headers=headers,
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert (body["face_lock"], body["voice_lock"], body["status"]) == (
+        "COMMERCIAL_POLITICAL",
+        "NONE",
+        "locked",
+    )
+    r = client.post(
+        "/identity/lock",
+        json={"identity_id": "ARMOR-L", "level": "ALL", "media": "VOICE"},
+        headers=headers,
+    )
+    assert r.json()["voice_lock"] == "ALL"
+    r = client.post(
+        "/identity/lock", json={"identity_id": "ARMOR-L", "level": "NONE"}, headers=headers
+    )
+    body = r.json()
+    assert (body["face_lock"], body["voice_lock"], body["status"]) == ("NONE", "NONE", "active")
+    profile = client.get("/identity/profile", params={"identity_id": "ARMOR-L"}, headers=headers)
+    assert profile.json()["face_lock"] == "NONE"

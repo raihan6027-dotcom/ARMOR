@@ -12,7 +12,6 @@ from typing import Optional
 
 from app.ai.gemini_client import gemini_client
 from app.schema.common import (
-    ConsentStatus,
     Intent,
     RiskLevel,
     normalize_intent,
@@ -20,16 +19,20 @@ from app.schema.common import (
     risk_score_to_level,
 )
 
-# Conservative baseline risk when the AI is unavailable: keyed by intent.
+# Baseline risk per intent when no trained Risk AI is available (Fase 5 replaces
+# this with a model). Consent and permission are deliberately NOT inputs: they are
+# handled by the policy engine (CLAUDE.md bagian 8).
 _FALLBACK_INTENT_RISK: dict[Intent, RiskLevel] = {
     Intent.PERSONAL_CREATION: RiskLevel.LOW,
     Intent.PERSONAL_EDITING: RiskLevel.LOW,
-    Intent.COMMERCIAL_USE: RiskLevel.HIGH,
-    Intent.POLITICAL_USE: RiskLevel.HIGH,
+    Intent.SATIRE_PARODY: RiskLevel.LOW,
+    Intent.COMMERCIAL_USE: RiskLevel.MEDIUM,
+    Intent.POLITICAL_USE: RiskLevel.MEDIUM,
     Intent.IMPERSONATION: RiskLevel.CRITICAL,
     Intent.DEFAMATION: RiskLevel.CRITICAL,
+    Intent.SEXUAL_EXPLICIT: RiskLevel.CRITICAL,
     Intent.DECEPTIVE: RiskLevel.HIGH,
-    Intent.UNCERTAIN: RiskLevel.HIGH,
+    Intent.UNCERTAIN: RiskLevel.MEDIUM,
 }
 
 _LEVEL_SCORE = {
@@ -74,7 +77,6 @@ class AIClient:
         self,
         identity_target: str,
         intent: str,
-        consent: str,
         prompt: Optional[str] = None,
         image_bytes: Optional[bytes] = None,
     ) -> dict:
@@ -97,7 +99,7 @@ class AIClient:
                         "available": True,
                     }
         # Deterministic conservative fallback.
-        level = self._fallback_level(identity_target, intent, consent)
+        level = self._fallback_level(intent)
         return {
             "risk_level": level.value,
             "risk_score": _LEVEL_SCORE[level],
@@ -105,15 +107,5 @@ class AIClient:
         }
 
     @staticmethod
-    def _fallback_level(identity_target: str, intent: str, consent: str) -> RiskLevel:
-        it = normalize_intent(intent)
-        base = _FALLBACK_INTENT_RISK.get(it, RiskLevel.HIGH)
-        target = (identity_target or "").upper()
-        cons = (consent or "").upper()
-        # Using someone else's identity without consent escalates risk.
-        if target == "OTHER" and cons not in (ConsentStatus.GRANTED.value, "APPROVED"):
-            if base == RiskLevel.LOW:
-                base = RiskLevel.MEDIUM
-            elif base == RiskLevel.MEDIUM:
-                base = RiskLevel.HIGH
-        return base
+    def _fallback_level(intent: str) -> RiskLevel:
+        return _FALLBACK_INTENT_RISK.get(normalize_intent(intent), RiskLevel.HIGH)

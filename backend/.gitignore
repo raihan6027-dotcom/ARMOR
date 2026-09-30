@@ -13,8 +13,8 @@ __pycache__/
 # Biometric / model artifacts — NEVER commit face data or embeddings
 *.pkl
 *.onnx
-data/
-models/
+/data/
+/models/
 Model Gambar/
 Foto Tokoh/
 Pre Deployment/

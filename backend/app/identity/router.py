@@ -6,6 +6,7 @@ from app.core.exceptions import NotFoundError
 from app.db.database import get_db
 from app.models.identity import Identity
 from app.models.user import User
+from app.schema.common import BiometricMedia
 from app.schema.identity import (
     IdentityEnrollRequest,
     IdentityEnrollResponse,
@@ -77,6 +78,8 @@ def get_identity_profile(
         status=identity.status,
         enrolled=identity.embedding_reference is not None,
         display_name=identity.display_name,
+        face_lock=identity_service.lock_level(identity, BiometricMedia.FACE),
+        voice_lock=identity_service.lock_level(identity, BiometricMedia.VOICE),
     )
 
 
@@ -86,9 +89,13 @@ def lock_identity(
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
-    identity = identity_service.lock(db, request.identity_id, current.user_id)
+    identity = identity_service.lock(
+        db, request.identity_id, current.user_id, request.level, request.media
+    )
     return IdentityLockResponse(
         identity_id=identity.identity_id,
         status=identity.status,
-        message="Identity locked successfully.",
+        face_lock=identity_service.lock_level(identity, BiometricMedia.FACE),
+        voice_lock=identity_service.lock_level(identity, BiometricMedia.VOICE),
+        message="Identity lock updated.",
     )

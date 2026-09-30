@@ -28,8 +28,9 @@ def request_consent(
         db,
         identity_id=request.identity_id,
         requester_id=current.user_id,
-        intent=request.intent,
+        intent=request.intent.value if request.intent else None,
         request_id=request.request_id,
+        media=request.media.value if request.media else None,
     )
     return ConsentRequestResponse(
         consent_id=consent.consent_id,

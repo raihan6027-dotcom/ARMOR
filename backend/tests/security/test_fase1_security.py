@@ -45,21 +45,31 @@ def test_1_cannot_reenroll_someone_elses_identity(client, accounts):
     assert r.status_code == 403
     assert r.json()["error"]["code"] == "FORBIDDEN"
 
-    # The attacker must still be treated as OTHER, never SELF, so no silent ALLOW.
+    # The attacker must still be treated as OTHER, never SELF. (Fase 2: an avatar
+    # would be ALLOWed by B's default permission, so use a purpose B has not
+    # pre-approved to show no SELF shortcut remains.)
     r = client.post(
         "/requests",
-        json={"identity_id": "ARMOR-B", "prompt": "Buatkan avatar kartun dari wajah ini."},
+        json={"identity_id": "ARMOR-B", "prompt": "Buat iklan produk kopi dengan wajah ini."},
         headers=accounts["atk"],
     )
     assert r.json()["identity"]["target"] == "OTHER"
     assert r.json()["decision"]["action"] != "ALLOW"
+    with SessionLocal() as db:
+        row = db.query(Request).filter(Request.request_id == r.json()["request_id"]).one()
+        assert row.identity_target == "OTHER_REGISTERED"
 
 
 # 2 -----------------------------------------------------------------------------
 def test_2_cannot_change_or_read_someone_elses_permissions(client, accounts):
     r = client.post(
         "/permissions",
-        json={"identity_id": "ARMOR-B", "action": "commercial_use", "decision": "ALLOW"},
+        json={
+            "identity_id": "ARMOR-B",
+            "intent": "COMMERCIAL_USE",
+            "media": "FACE",
+            "decision": "ALLOW",
+        },
         headers=accounts["atk"],
     )
     assert r.status_code == 403
@@ -67,7 +77,7 @@ def test_2_cannot_change_or_read_someone_elses_permissions(client, accounts):
     assert r.status_code == 403
     # Owner's permissions are unchanged.
     perms = client.get("/permissions", params={"identity_id": "ARMOR-B"}, headers=accounts["owner"])
-    assert perms.json()["permissions"]["commercial_use"] == "REVIEW"
+    assert perms.json()["permissions"]["FACE"]["COMMERCIAL_USE"] == "REVIEW"
 
 
 # 3 -----------------------------------------------------------------------------

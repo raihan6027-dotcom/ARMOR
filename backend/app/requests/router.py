@@ -29,6 +29,7 @@ def create_request(
         identity_id=payload.identity_id,
         prompt=payload.prompt,
         image_bytes=image_bytes,
+        media_type=payload.media_type,
     )
     return RequestDecisionResponse(**result)
 

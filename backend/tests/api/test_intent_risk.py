@@ -19,18 +19,17 @@ def test_analyze_intent_alias(client):
     assert r.json()["intent"] == "IMPERSONATION"
 
 
-def test_risk_endpoint_high_for_commercial_other(client):
+def test_risk_endpoint_medium_for_commercial_other(client):
+    # Fase 2: consent is not a risk feature (CLAUDE.md bagian 8) and a commercial
+    # ad must be able to reach REVIEW -> ALLOW with consent (scenario 4), so the
+    # fallback risk for COMMERCIAL_USE is MEDIUM, not HIGH.
     r = client.post(
         "/risk",
-        json={
-            "identity_target": "OTHER",
-            "intent": "COMMERCIAL_USE",
-            "consent": "UNKNOWN",
-        },
+        json={"identity_target": "OTHER_REGISTERED", "intent": "COMMERCIAL_USE"},
     )
     assert r.status_code == 200
     body = r.json()
-    assert body["risk_level"] in ("HIGH", "CRITICAL")
+    assert body["risk_level"] == "MEDIUM"
     assert 0 <= body["risk_score"] <= 100
 
 

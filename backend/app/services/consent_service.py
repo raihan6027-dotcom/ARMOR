@@ -9,6 +9,7 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ArmorError, ForbiddenError, NotFoundError
@@ -27,12 +28,14 @@ def create_request(
     requester_id: str,
     intent: Optional[str] = None,
     request_id: Optional[str] = None,
+    media: Optional[str] = None,
 ) -> Consent:
     consent = Consent(
         consent_id=_new_consent_id(),
         identity_id=identity_id,
         requester_id=requester_id,
         intent=intent,
+        media=media,
         request_id=request_id,
         status=ConsentStatus.PENDING.value,
     )
@@ -80,14 +83,23 @@ def respond(db: Session, consent_id: str, decision: str, user_id: str) -> Consen
     return consent
 
 
-def latest_status_for(db: Session, identity_id: str, requester_id: str) -> ConsentStatus:
-    """Most recent consent outcome this requester holds for an identity."""
-    consent = (
-        db.query(Consent)
-        .filter(Consent.identity_id == identity_id, Consent.requester_id == requester_id)
-        .order_by(Consent.updated_at.desc())
-        .first()
+def latest_status_for(
+    db: Session,
+    identity_id: str,
+    requester_id: str,
+    intent: Optional[str] = None,
+    media: Optional[str] = None,
+) -> ConsentStatus:
+    """Most recent consent outcome this requester holds for an identity whose scope
+    covers the given intent and media (a NULL scope field means "any")."""
+    q = db.query(Consent).filter(
+        Consent.identity_id == identity_id, Consent.requester_id == requester_id
     )
+    if intent is not None:
+        q = q.filter(or_(Consent.intent.is_(None), Consent.intent == intent))
+    if media is not None:
+        q = q.filter(or_(Consent.media.is_(None), Consent.media == media))
+    consent = q.order_by(Consent.updated_at.desc()).first()
     if consent is None:
-        return ConsentStatus.UNKNOWN
+        return ConsentStatus.NONE
     return normalize_consent(consent.status)
