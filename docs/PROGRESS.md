@@ -11,7 +11,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 | 1 | Selesai | `78287e1` |
 | 2 | Selesai | `2f03f1c` |
 | 3 | Selesai | `6c1cef7` |
-| 4 | Selesai | (lihat log di bawah) |
+| 4 | Selesai | `f8b16bb` |
 | 5 | Belum | |
 | 6 | Belum | |
 | 6b | Belum | |
@@ -73,7 +73,7 @@ Dokumen status untuk perintah `/otomatis` dan untuk tim. Urutan fase: 0, 1, 2, 3
 
 ### Fase 4: Intent AI
 
-- **Commit:** (lihat tabel status)
+- **Commit:** `f8b16bb`
 - **Ringkasan:** Dataset Intent AI dibuat dari template untuk 10 kelas, dua bahasa, dan tiga media (3.500 prompt, split beku 2.450/520/530 dengan hash set uji), ditambah 90 parafrase/eufemisme tulisan tangan sebagai set ketahanan. Panduan pelabelan ditulis, dan training final ditolak selama masih ada baris yang belum diperiksa. Baseline TF-IDF + LR dilatih sebagai eksperimen; ambang UNCERTAIN dipilih dari data validasi; laporan per kelas, recall kelas berbahaya, confusion matrix, dan hasil parafrase ada di `docs/eval/intent.md`. Skrip IndoBERT siap untuk GPU. Backend memuat model aktif (`ml/models/intent/active.json`) dengan fallback keyword, Gemini tidak lagi dipakai untuk intent, dan setiap log keputusan mencatat versi model.
 - **Hasil tes:** backend 254 lulus, 1 dilewati, 0 gagal; `ml/` 15 lulus; ruff bersih.
 - **Hasil eksperimen (bukan final):** set uji template macro F1 1,000 (menghafal template, tidak bermakna); set parafrase macro F1 0,485, recall berbahaya 0,358, tingkat lolos 0,184.
