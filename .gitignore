@@ -1,9 +1,60 @@
+# --- Rahasia ---
+.env
+.env.*
+!.env.example
+
+# --- Lingkungan Python / Node ---
 .venv/
 venv/
-.env
 __pycache__/
 *.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+node_modules/
+.next/
+out/
+
+# --- Basis data lokal ---
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Artefak model (CLAUDE.md bagian 9) ---
 *.pkl
 *.onnx
-*.db
-node_modules/
+*.pt
+*.pth
+*.safetensors
+*.joblib
+ml/models/**/*.bin
+ml/models/**/*
+!ml/models/README.md
+!ml/models/**/*.json
+!ml/models/**/*.md
+
+# --- Media dan dataset wajah/suara relawan: TIDAK PERNAH di-commit ---
+ml/face_eval/data/
+ml/voice_eval/data/
+ml/**/relawan/
+data/relawan/
+media/
+uploads/
+*.jpg
+*.jpeg
+*.heic
+*.wav
+*.mp3
+*.m4a
+*.mp4
+*.mov
+*.webm
+!docs/**/*.jpg
+
+# --- Anotasi mentah berisi identitas anotator ---
+ml/risk/annotations/raw/
+
+# --- Lain-lain ---
+.DS_Store
+Thumbs.db
