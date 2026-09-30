@@ -4,6 +4,7 @@ Coordinates identity verification -> intent analysis (AI) -> permission lookup -
 consent lookup -> risk analysis (AI) -> deterministic policy -> persisted decision.
 The AI supplies structured *information* only; the policy engine owns the verdict.
 """
+
 from __future__ import annotations
 
 import time
@@ -15,7 +16,7 @@ from app.ai.client import AIClient
 from app.core.logging import get_logger
 from app.models.request import Request
 from app.policy.engine import evaluate_policy
-from app.schema.common import Intent, RiskLevel, normalize_intent
+from app.schema.common import RiskLevel, normalize_intent
 from app.services import consent_service, identity_service, permission_service
 
 logger = get_logger("orchestration")
@@ -97,11 +98,17 @@ def orchestrate(
     logger.info(
         "request_id=%s identity=%s intent=%s risk=%s consent=%s permission=%s "
         "decision=%s reason=%s ms=%d",
-        request_id, identity_id, intent.value, risk_level, consent.value,
-        permission.value, decision, reason_code, elapsed_ms,
+        request_id,
+        identity_id,
+        intent.value,
+        risk_level,
+        consent.value,
+        permission.value,
+        decision,
+        reason_code,
+        elapsed_ms,
     )
 
-    ai_available = intent_res.get("available", False) or risk_res.get("available", False)
     risk_level_enum = RiskLevel(risk_level) if risk_level in RiskLevel._value2member_map_ else None
 
     return {

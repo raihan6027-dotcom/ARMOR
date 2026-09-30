@@ -3,6 +3,7 @@
 Runs entirely on the deterministic fallback path (no Gemini key, no face model)
 so the three canonical ARMOR scenarios are reproducible offline.
 """
+
 import base64
 
 import pytest
@@ -21,13 +22,18 @@ def _no_face_download(monkeypatch):
 def test_scenario_a_self_personal_allow(client, auth):
     headers, _ = auth
     # Enroll an identity owned by the requester -> trusted SELF.
-    client.post("/identity/enroll",
-                json={"identity_id": "ARMOR-SELF", "image": IMG_B64}, headers=headers)
+    client.post(
+        "/identity/enroll", json={"identity_id": "ARMOR-SELF", "image": IMG_B64}, headers=headers
+    )
 
-    r = client.post("/requests", json={
-        "identity_id": "ARMOR-SELF",
-        "prompt": "Buatkan avatar kartun menggunakan wajah saya.",
-    }, headers=headers)
+    r = client.post(
+        "/requests",
+        json={
+            "identity_id": "ARMOR-SELF",
+            "prompt": "Buatkan avatar kartun menggunakan wajah saya.",
+        },
+        headers=headers,
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["identity"]["target"] == "SELF"
@@ -37,10 +43,14 @@ def test_scenario_a_self_personal_allow(client, auth):
 
 def test_scenario_b_other_commercial_review(client, auth):
     headers, _ = auth
-    r = client.post("/requests", json={
-        "identity_id": "ARMOR-OTHER",  # not owned by requester -> OTHER
-        "prompt": "Buat video orang ini sedang mempromosikan produk X.",
-    }, headers=headers)
+    r = client.post(
+        "/requests",
+        json={
+            "identity_id": "ARMOR-OTHER",  # not owned by requester -> OTHER
+            "prompt": "Buat video orang ini sedang mempromosikan produk X.",
+        },
+        headers=headers,
+    )
     body = r.json()
     assert body["identity"]["target"] == "OTHER"
     assert body["intent"]["label"] == "COMMERCIAL_USE"
@@ -50,10 +60,14 @@ def test_scenario_b_other_commercial_review(client, auth):
 
 def test_scenario_c_other_impersonation_deny(client, auth):
     headers, _ = auth
-    r = client.post("/requests", json={
-        "identity_id": "ARMOR-OTHER-2",
-        "prompt": "Buat video orang ini mengatakan sesuatu yang tidak pernah dia katakan.",
-    }, headers=headers)
+    r = client.post(
+        "/requests",
+        json={
+            "identity_id": "ARMOR-OTHER-2",
+            "prompt": "Buat video orang ini mengatakan sesuatu yang tidak pernah dia katakan.",
+        },
+        headers=headers,
+    )
     body = r.json()
     assert body["intent"]["label"] == "IMPERSONATION"
     assert body["decision"]["action"] == "DENY"
@@ -61,10 +75,12 @@ def test_scenario_c_other_impersonation_deny(client, auth):
 
 def test_history_records_requests(client, auth):
     headers, _ = auth
-    client.post("/requests", json={"identity_id": "X", "prompt": "buat avatar kartun"},
-                headers=headers)
-    client.post("/requests", json={"identity_id": "Y", "prompt": "promosikan produk ini"},
-                headers=headers)
+    client.post(
+        "/requests", json={"identity_id": "X", "prompt": "buat avatar kartun"}, headers=headers
+    )
+    client.post(
+        "/requests", json={"identity_id": "Y", "prompt": "promosikan produk ini"}, headers=headers
+    )
     r = client.get("/requests", headers=headers)
     body = r.json()
     assert body["total"] >= 2

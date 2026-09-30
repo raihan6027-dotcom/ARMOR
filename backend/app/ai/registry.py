@@ -4,6 +4,7 @@ matches query embeddings against it via cosine similarity.
 Lazy-loaded on first use so the app boots (and tests run) even when the model
 files are absent — in that case `available` is False and callers fall back safely.
 """
+
 from __future__ import annotations
 
 import os
@@ -63,10 +64,11 @@ class FaceRegistry:
         try:
             import pandas as pd
 
-            df = pd.read_pickle(path)
+            df = pd.read_pickle(path)  # noqa: S301 - legacy local artifact, removed in Fase 3
             emb_col = next(c for c in df.columns if "embed" in c.lower())
             id_col = next(
-                c for c in df.columns
+                c
+                for c in df.columns
                 if any(k in c.lower() for k in ("id", "ident", "name", "nama", "label"))
             )
             matrix = np.vstack([np.asarray(v, dtype=np.float32).flatten() for v in df[emb_col]])

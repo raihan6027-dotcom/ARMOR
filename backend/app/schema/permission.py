@@ -5,8 +5,8 @@ from app.schema.common import PermissionDecision
 
 class PermissionSetRequest(BaseModel):
     identity_id: str
-    action: str                      # e.g. "commercial_use"
-    decision: PermissionDecision     # ALLOW | REVIEW | DENY
+    action: str  # e.g. "commercial_use"
+    decision: PermissionDecision  # ALLOW | REVIEW | DENY
 
 
 class PermissionSetResponse(BaseModel):

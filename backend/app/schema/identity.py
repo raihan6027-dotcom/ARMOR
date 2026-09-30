@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 class IdentityEnrollRequest(BaseModel):
     identity_id: str
-    image: str                       # base64-encoded face image
+    image: str  # base64-encoded face image
     display_name: Optional[str] = None
 
 
@@ -17,7 +17,7 @@ class IdentityEnrollResponse(BaseModel):
 
 class IdentityVerifyRequest(BaseModel):
     identity_id: str
-    image: str                       # base64-encoded face image
+    image: str  # base64-encoded face image
 
 
 class IdentityVerifyResponse(BaseModel):

@@ -1,4 +1,5 @@
 """Unit tests for AI-output normalization."""
+
 from app.schema.common import (
     ConsentStatus,
     Intent,

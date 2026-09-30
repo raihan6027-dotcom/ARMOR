@@ -23,13 +23,15 @@ def face_model(monkeypatch):
 
 def test_enroll_then_verify_match(client, auth, face_model):
     headers, _ = auth
-    r = client.post("/identity/enroll",
-                    json={"identity_id": "ARMOR-001", "image": IMG_B64}, headers=headers)
+    r = client.post(
+        "/identity/enroll", json={"identity_id": "ARMOR-001", "image": IMG_B64}, headers=headers
+    )
     assert r.status_code == 200
     assert r.json()["status"] == "active"
 
-    r = client.post("/identity/verify",
-                    json={"identity_id": "ARMOR-001", "image": IMG_B64}, headers=headers)
+    r = client.post(
+        "/identity/verify", json={"identity_id": "ARMOR-001", "image": IMG_B64}, headers=headers
+    )
     body = r.json()
     assert body["match"] is True
     assert body["confidence"] >= 0.4
@@ -37,21 +39,25 @@ def test_enroll_then_verify_match(client, auth, face_model):
 
 def test_verify_mismatch(client, auth, face_model):
     headers, _ = auth
-    client.post("/identity/enroll",
-                json={"identity_id": "ARMOR-001", "image": IMG_B64}, headers=headers)
+    client.post(
+        "/identity/enroll", json={"identity_id": "ARMOR-001", "image": IMG_B64}, headers=headers
+    )
     face_model["vec"] = VEC_B  # different face on verify
-    r = client.post("/identity/verify",
-                    json={"identity_id": "ARMOR-001", "image": IMG_B64}, headers=headers)
+    r = client.post(
+        "/identity/verify", json={"identity_id": "ARMOR-001", "image": IMG_B64}, headers=headers
+    )
     assert r.json()["match"] is False
 
 
 def test_verify_model_unavailable_is_not_a_match(client, auth, monkeypatch):
     headers, _ = auth
     monkeypatch.setattr(identity_ai_client, "embed", lambda _b: None)
-    client.post("/identity/enroll",
-                json={"identity_id": "ARMOR-002", "image": IMG_B64}, headers=headers)
-    r = client.post("/identity/verify",
-                    json={"identity_id": "ARMOR-002", "image": IMG_B64}, headers=headers)
+    client.post(
+        "/identity/enroll", json={"identity_id": "ARMOR-002", "image": IMG_B64}, headers=headers
+    )
+    r = client.post(
+        "/identity/verify", json={"identity_id": "ARMOR-002", "image": IMG_B64}, headers=headers
+    )
     body = r.json()
     assert body["match"] is False
     assert body["ai_available"] is False
@@ -59,8 +65,9 @@ def test_verify_model_unavailable_is_not_a_match(client, auth, monkeypatch):
 
 def test_profile_and_lock(client, auth, face_model):
     headers, _ = auth
-    client.post("/identity/enroll",
-                json={"identity_id": "ARMOR-003", "image": IMG_B64}, headers=headers)
+    client.post(
+        "/identity/enroll", json={"identity_id": "ARMOR-003", "image": IMG_B64}, headers=headers
+    )
 
     r = client.get("/identity/profile", params={"identity_id": "ARMOR-003"}, headers=headers)
     assert r.status_code == 200

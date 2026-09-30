@@ -30,9 +30,7 @@ def set_permission(
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
-    permission_service.set_permission(
-        db, request.identity_id, request.action, request.decision
-    )
+    permission_service.set_permission(db, request.identity_id, request.action, request.decision)
     return PermissionSetResponse(
         identity_id=request.identity_id,
         action=request.action,

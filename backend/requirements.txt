@@ -1,35 +1,10 @@
-# --- Web framework ---
-fastapi==0.115.14
-uvicorn[standard]==0.52.4
-python-multipart==0.0.32
-email-validator==2.3.0
+# Instalasi lengkap backend ARMOR.
+-r requirements-core.txt
+-r requirements-ml.txt
 
-# --- Config / validation ---
-pydantic==2.13.4
-pydantic-settings==2.15.0
-python-dotenv==1.2.3
-
-# --- Database ---
-SQLAlchemy==2.0.54
-PyMySQL==1.2.3          # MySQL driver (deployment target)
-cryptography==50.0.1    # required by PyMySQL for MySQL 8 sha2 auth
-
-# --- Auth / security ---
-bcrypt==5.0.0
-python-jose[cryptography]==3.5.0
-
-# --- AI: Gemini (intent / risk / analysis) ---
+# --- Warisan: dihapus di Fase 3-5 (CLAUDE.md bagian 12, Gemini tidak dipakai) ---
 google-genai==2.25.0
-pillow==12.3.0
 
-# --- AI: Face identity (ArcFace / InsightFace) ---
-insightface==2.0
-onnxruntime==1.23.2
-opencv-python-headless==5.0.0.93
-numpy==2.2.6
-pandas==2.3.3
-scikit-learn==1.7.2
-
-# --- Testing ---
+# --- Tes ---
 pytest==9.1.1
 httpx==0.28.1

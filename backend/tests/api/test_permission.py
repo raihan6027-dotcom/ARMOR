@@ -10,10 +10,11 @@ def test_default_permissions(client, auth):
 
 def test_override_permission(client, auth):
     headers, _ = auth
-    r = client.post("/permissions",
-                    json={"identity_id": "ARMOR-001", "action": "commercial_use",
-                          "decision": "ALLOW"},
-                    headers=headers)
+    r = client.post(
+        "/permissions",
+        json={"identity_id": "ARMOR-001", "action": "commercial_use", "decision": "ALLOW"},
+        headers=headers,
+    )
     assert r.status_code == 200
 
     r = client.get("/permissions", params={"identity_id": "ARMOR-001"}, headers=headers)
@@ -22,10 +23,11 @@ def test_override_permission(client, auth):
 
 def test_permission_invalid_decision_422(client, auth):
     headers, _ = auth
-    r = client.post("/permissions",
-                    json={"identity_id": "ARMOR-001", "action": "commercial_use",
-                          "decision": "PERHAPS"},
-                    headers=headers)
+    r = client.post(
+        "/permissions",
+        json={"identity_id": "ARMOR-001", "action": "commercial_use", "decision": "PERHAPS"},
+        headers=headers,
+    )
     assert r.status_code == 422
 
 

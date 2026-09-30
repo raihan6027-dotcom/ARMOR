@@ -5,6 +5,7 @@ a fresh embedding to the enrolled one, falling back to the pre-deployment regist
 When the face model is unavailable, results are flagged (`ai_available=False`) and
 never reported as a positive match.
 """
+
 from __future__ import annotations
 
 import base64
@@ -35,7 +36,7 @@ def decode_image(image_b64: str) -> bytes:
     try:
         return base64.b64decode(image_b64, validate=True)
     except (binascii.Error, ValueError) as exc:
-        raise ArmorError("INVALID_IMAGE", f"Image is not valid base64: {exc}", 422)
+        raise ArmorError("INVALID_IMAGE", f"Image is not valid base64: {exc}", 422) from exc
 
 
 def _cosine(a: np.ndarray, b: np.ndarray) -> float:
@@ -86,8 +87,12 @@ def verify(db: Session, identity_id: str, image_bytes: bytes) -> dict:
     """Verify a face against the claimed identity. Returns match/confidence/ai_available."""
     query = identity_ai_client.embed(image_bytes)
     if query is None:
-        return {"match": False, "confidence": 0.0, "ai_available": False,
-                "status": "model_unavailable"}
+        return {
+            "match": False,
+            "confidence": 0.0,
+            "ai_available": False,
+            "status": "model_unavailable",
+        }
 
     identity = db.query(Identity).filter(Identity.identity_id == identity_id).first()
 
@@ -100,8 +105,7 @@ def verify(db: Session, identity_id: str, image_bytes: bytes) -> dict:
 
     if score is None:
         # No enrolled embedding and not in the registry.
-        return {"match": False, "confidence": 0.0, "ai_available": True,
-                "status": "not_enrolled"}
+        return {"match": False, "confidence": 0.0, "ai_available": True, "status": "not_enrolled"}
 
     match = score >= settings.face_match_threshold
     return {

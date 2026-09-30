@@ -1,4 +1,5 @@
 """Consistent error envelope: every error response is `{"error": {"code","message"}}`."""
+
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse

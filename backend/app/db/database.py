@@ -1,5 +1,6 @@
 """SQLAlchemy engine + session. Driver-agnostic: the same models run on MySQL
 (deployment target) and SQLite (local/tests) purely from DATABASE_URL."""
+
 from collections.abc import Generator
 
 from sqlalchemy import create_engine

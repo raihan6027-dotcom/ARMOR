@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./armor.db"
 
     # --- Auth / JWT ---
-    jwt_secret: str = "change-me-in-production"
+    jwt_secret: str = "change-me-in-production"  # noqa: S105 - dev default, set JWT_SECRET
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24
 
@@ -39,6 +39,14 @@ class Settings(BaseSettings):
     insightface_model: str = "buffalo_l"
     # Cosine-similarity threshold for a positive face match (from the team notebook).
     face_match_threshold: float = 0.40
+    # Half-width of the gray zone around the threshold (scores inside => UNCLEAR/REVIEW).
+    face_gray_margin: float = 0.05
+
+    # --- Environment ---
+    app_env: str = "dev"  # dev | production
+
+    # --- Biometric embedding encryption (Fernet key, base64 url-safe 32 bytes) ---
+    armor_embedding_key: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",

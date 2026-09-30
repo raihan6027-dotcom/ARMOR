@@ -1,5 +1,6 @@
 """Password hashing (bcrypt) and JWT creation/verification."""
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 from typing import Optional
 
 import bcrypt
@@ -25,7 +26,7 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 def create_access_token(subject: str, extra: Optional[dict] = None) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": subject,
         "iat": now,

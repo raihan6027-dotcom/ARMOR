@@ -3,20 +3,19 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.auth.router import router as auth_router
+from app.consent.router import router as consent_router
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
 from app.db.database import init_db
-
-from app.auth.router import router as auth_router
-from app.identity.router import router as identity_router
-from app.permission.router import router as permission_router
-from app.intent.router import router as intent_router
-from app.risk.router import router as risk_router
-from app.consent.router import router as consent_router
 from app.decision.router import router as decision_router
-from app.requests.router import router as requests_router
+from app.identity.router import router as identity_router
+from app.intent.router import router as intent_router
 from app.logs.router import router as logs_router
+from app.permission.router import router as permission_router
+from app.requests.router import router as requests_router
+from app.risk.router import router as risk_router
 
 logger = get_logger("main")
 

@@ -2,6 +2,7 @@
 free-text output onto those enums. AI output is NEVER trusted verbatim: anything
 unrecognized collapses to a safe, explicit "unknown/uncertain" value so the
 deterministic policy engine can fall back to REVIEW instead of mis-deciding."""
+
 from enum import Enum
 
 
@@ -52,13 +53,101 @@ class Decision(str, Enum):
 
 # Keyword -> canonical Intent. Order matters: earlier, more specific concepts win.
 _INTENT_KEYWORDS: list[tuple[Intent, tuple[str, ...]]] = [
-    (Intent.IMPERSONATION, ("imperson", "pretend", "say something", "mengatakan", "seolah", "fake statement", "put words")),
-    (Intent.DEFAMATION, ("defam", "slander", "pencemaran", "humiliat", "mempermalukan", "arrest", "tahanan", "borgol", "criminal", "drug", "narkob")),
-    (Intent.DECEPTIVE, ("deceiv", "deceptive", "mislead", "menipu", "hoax", "disinformasi", "scam")),
-    (Intent.POLITICAL_USE, ("political", "politik", "campaign", "kampanye", "election", "pemilu", "flag", "bendera", "speech", "pidato", "podium")),
-    (Intent.COMMERCIAL_USE, ("commercial", "komersial", "promot", "mempromosikan", "advertis", "iklan", "endorse", "product", "produk", "brand", "sponsor")),
-    (Intent.PERSONAL_EDITING, ("edit", "retouch", "enhance", "perbaiki", "filter")),
-    (Intent.PERSONAL_CREATION, ("avatar", "cartoon", "kartun", "personal", "pribadi", "profile pic", "selfie", "portrait")),
+    (
+        Intent.IMPERSONATION,
+        (
+            "imperson",
+            "pretend",
+            "say something",
+            "mengatakan",
+            "seolah",
+            "fake statement",
+            "put words",
+        ),
+    ),
+    (
+        Intent.DEFAMATION,
+        (
+            "defam",
+            "slander",
+            "pencemaran",
+            "humiliat",
+            "mempermalukan",
+            "arrest",
+            "tahanan",
+            "borgol",
+            "criminal",
+            "drug",
+            "narkob",
+        ),
+    ),
+    (
+        Intent.DECEPTIVE,
+        (
+            "deceiv",
+            "deceptive",
+            "mislead",
+            "menipu",
+            "hoax",
+            "disinformasi",
+            "scam",
+        ),
+    ),
+    (
+        Intent.POLITICAL_USE,
+        (
+            "political",
+            "politik",
+            "campaign",
+            "kampanye",
+            "election",
+            "pemilu",
+            "flag",
+            "bendera",
+            "speech",
+            "pidato",
+            "podium",
+        ),
+    ),
+    (
+        Intent.COMMERCIAL_USE,
+        (
+            "commercial",
+            "komersial",
+            "promot",
+            "mempromosikan",
+            "advertis",
+            "iklan",
+            "endorse",
+            "product",
+            "produk",
+            "brand",
+            "sponsor",
+        ),
+    ),
+    (
+        Intent.PERSONAL_EDITING,
+        (
+            "edit",
+            "retouch",
+            "enhance",
+            "perbaiki",
+            "filter",
+        ),
+    ),
+    (
+        Intent.PERSONAL_CREATION,
+        (
+            "avatar",
+            "cartoon",
+            "kartun",
+            "personal",
+            "pribadi",
+            "profile pic",
+            "selfie",
+            "portrait",
+        ),
+    ),
 ]
 
 

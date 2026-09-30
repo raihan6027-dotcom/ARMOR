@@ -5,6 +5,7 @@ delegates to Gemini and normalizes the output. When Gemini is unavailable the
 methods fall back to a *conservative* deterministic heuristic (never auto-low
 risk, never a positive-but-unverified claim) so the system fails safe.
 """
+
 from __future__ import annotations
 
 from typing import Optional

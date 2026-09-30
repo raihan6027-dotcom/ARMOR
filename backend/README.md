@@ -43,8 +43,9 @@ Layers (module layout preserved from the original repo and extended):
 ```bash
 python -m venv .venv
 .venv\Scripts\activate          # Windows (use: source .venv/bin/activate on macOS/Linux)
-pip install -r requirements.txt
-cp .env.example .env            # then edit .env
+pip install -r requirements-dev.txt   # API + tests (add requirements-ml.txt for real models)
+cp .env.example .env
+python scripts/gen_secrets.py --write
 uvicorn app.main:app --reload
 ```
 

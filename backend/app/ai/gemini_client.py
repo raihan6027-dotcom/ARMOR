@@ -8,6 +8,7 @@ engine produces the authoritative ALLOW/REVIEW/DENY.
 If no API key is configured or the call fails, `available` is False and callers
 apply a safe fallback (never auto-ALLOW).
 """
+
 from __future__ import annotations
 
 import io

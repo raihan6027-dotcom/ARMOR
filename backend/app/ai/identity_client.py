@@ -5,6 +5,7 @@ InsightFace + its model pack are heavy and download on first use, so the pipelin
 is lazy-initialized. If unavailable, `available` is False and the identity service
 degrades to a safe, explicit "unverified" result (policy then falls back to REVIEW).
 """
+
 from __future__ import annotations
 
 import io
@@ -67,7 +68,9 @@ class IdentityAIClient:
             faces = self._app.get(bgr)
             if not faces:
                 return None
-            faces.sort(key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]), reverse=True)
+            faces.sort(
+                key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]), reverse=True
+            )
             return np.asarray(faces[0].normed_embedding, dtype=np.float32)
         except Exception as exc:  # pragma: no cover
             logger.warning("Embedding failed: %s", exc)

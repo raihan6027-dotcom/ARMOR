@@ -1,4 +1,5 @@
 """Consent lifecycle: request -> pending -> granted/denied, persisted in the DB."""
+
 from __future__ import annotations
 
 from typing import Optional

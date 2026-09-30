@@ -1,0 +1,41 @@
+[project]
+name = "armor-backend"
+version = "0.3.0"
+description = "ARMOR AI Safety Gateway (FastAPI)"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "model: tes yang butuh model AI asli terunduh (dilewati jika tidak tersedia)",
+    "slow: tes lambat",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".venv", "data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "C4", "SIM"]
+ignore = [
+    "B008",   # FastAPI Depends() di default argumen adalah pola resmi
+    "S101",   # assert dipakai di tes
+    "UP045",  # Optional[X] dibiarkan agar diff kode lama kecil
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "E501"]
+"scripts/**" = ["T201"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

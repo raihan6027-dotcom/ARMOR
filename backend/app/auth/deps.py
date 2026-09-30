@@ -1,4 +1,5 @@
 """Auth dependencies: extract and validate the bearer token, load the user."""
+
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session

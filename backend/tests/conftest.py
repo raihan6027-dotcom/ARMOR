@@ -1,5 +1,6 @@
 """Test fixtures. Configures an isolated SQLite DB and a Gemini-less environment
 (so the deterministic fallback path is exercised) BEFORE the app is imported."""
+
 import os
 import tempfile
 
@@ -8,9 +9,9 @@ _TMP_DB = os.path.join(tempfile.gettempdir(), "armor_test.db")
 _TMP_MODEL_DIR = tempfile.mkdtemp(prefix="armor_models_")
 
 os.environ["DATABASE_URL"] = f"sqlite:///{_TMP_DB}"
-os.environ["GEMINI_API_KEY"] = ""              # force deterministic fallback
+os.environ["GEMINI_API_KEY"] = ""  # force deterministic fallback
 os.environ["JWT_SECRET"] = "test-secret"
-os.environ["MODEL_DIR"] = _TMP_MODEL_DIR       # empty => face model/registry unavailable
+os.environ["MODEL_DIR"] = _TMP_MODEL_DIR  # empty => face model/registry unavailable
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

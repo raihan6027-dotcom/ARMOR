@@ -1,5 +1,6 @@
 """Application logging. Logs decision metadata only — never passwords, API keys,
 or raw biometric data."""
+
 import logging
 import sys
 

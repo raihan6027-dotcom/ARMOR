@@ -6,6 +6,7 @@ fixed rules to produce ALLOW / REVIEW / DENY. No LLM output is trusted as the fi
 decision here, and any uncertainty (undetermined risk, unverified self, unknown
 consent on another's identity) resolves to REVIEW or DENY — never a silent ALLOW.
 """
+
 from __future__ import annotations
 
 from typing import Optional
