@@ -70,3 +70,8 @@ ml/models/**/synthetic/
 
 # Prompt pengguna untuk loop pembelajaran (tidak di-commit)
 ml/feedback/*.csv
+
+# --- Berkas kerja pribadi tim: disimpan lokal, tidak di repo publik ---
+/CLAUDE.md
+/docs/PROMPTS.md
+/.claude/
